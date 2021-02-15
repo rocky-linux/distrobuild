@@ -1,6 +1,8 @@
-.env
 ui/node_modules
 ui/dist
+ui/yarn-error.log
+.DS_Store
+.env
 __pycache__
 *.pyc
 .venv
