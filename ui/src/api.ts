@@ -24,6 +24,7 @@ export interface IImport {
   id: string;
   created_at: string;
   status: string;
+  commit: string;
   _package: IPackage;
 }
 

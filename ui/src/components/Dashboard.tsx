@@ -78,7 +78,14 @@ export const Dashboard = () => {
                     {new Date(item.created_at).toLocaleString()}
                   </TableCell>
                   <TableCell>{item.package.name}</TableCell>
-                  <TableCell>{item.koji_id}</TableCell>
+                  <TableCell>
+                    <Link
+                      target="_blank"
+                      href={`${window.SETTINGS.kojiWeburl}/taskinfo?taskID=${item.koji_id}`}
+                    >
+                      {item.koji_id}
+                    </Link>
+                  </TableCell>
                   <TableCell>{statusToTag(item.status)}</TableCell>
                 </TableRow>
               ))}
@@ -113,8 +120,17 @@ export const Dashboard = () => {
                   <TableCell>{item._package.name}</TableCell>
                   <TableCell>{statusToTag(item.status)}</TableCell>
                   <TableCell>
-                    <Link href={`/api/build/imports/${item.id}/logs`}>
+                    <Link
+                      style={{ marginRight: '10px' }}
+                      href={`/api/build/imports/${item.id}/logs`}
+                    >
                       Logs
+                    </Link>
+                    <Link
+                      target="_blank"
+                      href={`${window.SETTINGS.gitlabUrl}/rpms/${item._package.name}/-/commit/${item.commit}`}
+                    >
+                      GitLab commit
                     </Link>
                   </TableCell>
                 </TableRow>
