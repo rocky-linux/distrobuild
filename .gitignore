@@ -2,6 +2,7 @@ ui/node_modules
 ui/dist
 ui/yarn-error.log
 /README.html
+.#*
 .DS_Store
 .env
 __pycache__
