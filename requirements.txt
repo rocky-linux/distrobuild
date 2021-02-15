@@ -1,0 +1,11 @@
+fastapi==0.63.0
+tortoise-orm[asyncpg]==0.16.20
+aerich==0.4.4
+requests==2.25.1
+starlette-context==0.3.1
+aiofiles==0.6.0
+jinja2==2.11.3
+fastapi-pagination[tortoise]==0.5.2
+koji==1.23.1
+python-dotenv==0.15.0
+python-gitlab==2.6.0

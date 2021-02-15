@@ -1,0 +1,29 @@
+-- upgrade --
+CREATE TABLE IF NOT EXISTS "builds" (
+    "id" BIGSERIAL NOT NULL PRIMARY KEY,
+    "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ,
+    "status" VARCHAR(9) NOT NULL,
+    "mbs" BOOL NOT NULL  DEFAULT False,
+    "koji_id" BIGINT,
+    "mbs_id" BIGINT,
+    "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE CASCADE
+);
+COMMENT ON COLUMN "builds"."status" IS 'QUEUED: QUEUED\nBUILDING: BUILDING\nFAILED: FAILED\nSUCCEEDED: SUCCEEDED\nCANCELLED: CANCELLED';;
+CREATE TABLE IF NOT EXISTS "imports" (
+    "id" BIGSERIAL NOT NULL PRIMARY KEY,
+    "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ,
+    "status" VARCHAR(9) NOT NULL,
+    "version" INT NOT NULL,
+    "commit" VARCHAR(255),
+    "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE CASCADE
+);
+COMMENT ON COLUMN "imports"."status" IS 'QUEUED: QUEUED\nBUILDING: BUILDING\nFAILED: FAILED\nSUCCEEDED: SUCCEEDED\nCANCELLED: CANCELLED';;
+ALTER TABLE "packages" ADD "last_import" TIMESTAMPTZ;
+ALTER TABLE "packages" DROP COLUMN "latest_dist_commit";
+-- downgrade --
+ALTER TABLE "packages" ADD "latest_dist_commit" TEXT;
+ALTER TABLE "packages" DROP COLUMN "last_import";
+DROP TABLE IF EXISTS "builds";
+DROP TABLE IF EXISTS "imports";
