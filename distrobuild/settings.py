@@ -1,10 +1,9 @@
 from typing import Optional
-from enum import Enum
 from pydantic import BaseSettings
+
 
 class Settings(BaseSettings):
     gitlab_host: str
-    koji_hub_url: str
     repo_prefix: str
     storage_addr: str
     ssh_user: str = "git"
@@ -13,10 +12,13 @@ class Settings(BaseSettings):
     version: int = 8
     bugs_api_key: str
     gitlab_api_key: str
-
+    broker_url: str
+    routing_key: str = "distrobuild"
+    workers: int = 10
 
     class Config:
         env_file = "/etc/distrobuild/settings"
+
 
 settings = Settings()
 

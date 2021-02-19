@@ -1,7 +1,7 @@
 import json
-import re
 
 from distrobuild.models import Package, PackageModule, Repo
+
 
 async def process_repo_dump(repo: Repo) -> None:
     with open(f"/tmp/{repo}_ALL.txt", "r") as f:
@@ -11,6 +11,7 @@ async def process_repo_dump(repo: Repo) -> None:
             if await Package.filter(name=package_name).get_or_none():
                 continue
             await Package.create(name=package_name, el8=True, is_package=True, repo=repo)
+
 
 async def process_module_dump() -> None:
     f = open("/tmp/modules.json")

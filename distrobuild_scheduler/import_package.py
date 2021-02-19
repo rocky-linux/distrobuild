@@ -1,0 +1,42 @@
+import datetime
+
+from tortoise.transactions import atomic
+
+from distrobuild.models import BuildStatus, Package, Import, ImportCommit
+from distrobuild.session import koji_session, gl
+from distrobuild.settings import settings
+from distrobuild import srpmproc
+
+
+@atomic()
+async def do(package: Package, package_import: Import):
+    if not package.is_module and not package.part_of_module:
+        koji_session.packageListAdd("dist-rocky8", package.name, "distrobuild")
+
+    branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module)
+    for branch in branch_commits.keys():
+        commit = branch_commits[branch]
+        await ImportCommit.create(branch=branch, commit=commit, import__id=package_import.id)
+
+    package.last_import = datetime.datetime.now()
+
+    mode = "modules" if package_import.module else "rpms"
+    project = gl.projects.get(f"{settings.repo_prefix.removeprefix('/')}/{mode}/{package.name}")
+    project.visibility = "public"
+    project.save()
+
+
+# noinspection DuplicatedCode
+async def task(package_id: int, import_id: int):
+    package = await Package.filter(id=package_id).get()
+    package_import = await Import.filter(id=import_id).get()
+    try:
+        await do(package, package_import)
+    except Exception as e:
+        print(e)
+        package_import.status = BuildStatus.FAILED
+    else:
+        package_import.status = BuildStatus.SUCCEEDED
+    finally:
+        await package_import.save()
+        await package.save()

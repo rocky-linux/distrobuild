@@ -120,18 +120,18 @@ export const Dashboard = () => {
                   <TableCell>{item._package.name}</TableCell>
                   <TableCell>{statusToTag(item.status)}</TableCell>
                   <TableCell>
-                    <Link
-                      style={{ marginRight: '10px' }}
-                      href={`/api/build/imports/${item.id}/logs`}
-                    >
+                    <Link href={`/api/build/imports/${item.id}/logs`}>
                       Logs
                     </Link>
-                    <Link
-                      target="_blank"
-                      href={`${window.SETTINGS.gitlabUrl}/rpms/${item._package.name}/-/commit/${item.commit}`}
-                    >
-                      GitLab commit
-                    </Link>
+                    {item.commit && (
+                      <Link
+                        style={{ marginLeft: '10px' }}
+                        target="_blank"
+                        href={`${window.SETTINGS.gitlabUrl}/rpms/${item._package.name}/-/commit/${item.commit}`}
+                      >
+                        GitLab commit
+                      </Link>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

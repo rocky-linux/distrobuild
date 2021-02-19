@@ -10,6 +10,7 @@ from distrobuild.settings import settings
 
 gl = gitlab.Gitlab(f"https://{settings.gitlab_host}", private_token=settings.gitlab_api_key)
 
+
 # from https://pagure.io/koji/blob/master/f/cli/koji_cli/lib.py
 def ensure_connection(session):
     try:
@@ -18,7 +19,8 @@ def ensure_connection(session):
         raise Exception("Error: Unable to connect to server")
     if ret != koji.API_VERSION:
         print("WARNING: The server is at API version %d and "
-               "the client is at %d" % (ret, koji.API_VERSION))
+              "the client is at %d" % (ret, koji.API_VERSION))
+
 
 def activate_session(session, options):
     """Test and login the session is applicable"""
@@ -33,8 +35,8 @@ def activate_session(session, options):
         # authenticate using SSL client cert
         session.ssl_login(options.cert, None, options.serverca, proxyuser=runas)
     elif options.authtype == "password" \
-            or getattr(options, 'user', None) \
-            and options.authtype is None:
+        or getattr(options, 'user', None) \
+        and options.authtype is None:
         # authenticate using user/password
         session.login()
     elif options.authtype == "kerberos" or options.authtype is None:
@@ -51,8 +53,10 @@ def activate_session(session, options):
     ensure_connection(session)
     if getattr(options, 'debug', None):
         print("successfully connected to hub")
+
+
 # end
 
 koji_config = koji.read_config("koji")
-koji_session = koji.ClientSession(settings.koji_hub_url, koji_config)
+koji_session = koji.ClientSession(koji_config["server"], koji_config)
 activate_session(koji_session, koji_config)
