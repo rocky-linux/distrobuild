@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS "builds" (
     "mbs" BOOL NOT NULL  DEFAULT False,
     "koji_id" BIGINT,
     "mbs_id" BIGINT,
+    "commit" VARCHAR(255) NOT NULL,
+    "branch" VARCHAR(255) NOT NULL,
     "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE CASCADE
 );
 COMMENT ON COLUMN "builds"."status" IS 'QUEUED: QUEUED\nBUILDING: BUILDING\nFAILED: FAILED\nSUCCEEDED: SUCCEEDED\nCANCELLED: CANCELLED';;
@@ -16,14 +18,17 @@ CREATE TABLE IF NOT EXISTS "imports" (
     "updated_at" TIMESTAMPTZ,
     "status" VARCHAR(9) NOT NULL,
     "version" INT NOT NULL,
-    "commit" VARCHAR(255),
+    "module" BOOL NOT NULL  DEFAULT False,
     "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE CASCADE
 );
 COMMENT ON COLUMN "imports"."status" IS 'QUEUED: QUEUED\nBUILDING: BUILDING\nFAILED: FAILED\nSUCCEEDED: SUCCEEDED\nCANCELLED: CANCELLED';;
-ALTER TABLE "packages" ADD "last_import" TIMESTAMPTZ;
-ALTER TABLE "packages" DROP COLUMN "latest_dist_commit";
+CREATE TABLE IF NOT EXISTS "import_commits" (
+    "id" BIGSERIAL NOT NULL PRIMARY KEY,
+    "commit" VARCHAR(255) NOT NULL,
+    "branch" VARCHAR(255) NOT NULL,
+    "import__id" BIGINT NOT NULL REFERENCES "imports" ("id") ON DELETE CASCADE
+);;
 -- downgrade --
-ALTER TABLE "packages" ADD "latest_dist_commit" TEXT;
-ALTER TABLE "packages" DROP COLUMN "last_import";
 DROP TABLE IF EXISTS "builds";
 DROP TABLE IF EXISTS "imports";
+DROP TABLE IF EXISTS "import_commits";

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
@@ -92,6 +92,28 @@ async def batch_queue_build(body: BatchBuildRequest):
     return {}
 
 
+async def create_build_order(package: Package) -> List[Tuple[int, int]]:
+    pkg_list = []
+
+    if package.is_package:
+        package_import = await Import.create(package_id=package.id, status=BuildStatus.QUEUED, version=8)
+        pkg_list.append((package.id, package_import.id))
+
+    if package.is_module:
+        subpackages = await PackageModule.filter(module_parent_package_id=package.id).all()
+        for subpackage in subpackages:
+            imports = await Import.filter(package_id=subpackage.package_id).all()
+            if not imports or len(imports) == 0:
+                subpackage_package = await Package.filter(id=subpackage.package_id).get()
+                pkg_list += await create_build_order(subpackage_package)
+
+        package_module_import = await Import.create(package_id=package.id, status=BuildStatus.QUEUED, version=8,
+                                                    module=True)
+        pkg_list.append((package.id, package_module_import.id))
+
+    return pkg_list
+
+
 @router.post("/imports/", status_code=202)
 async def import_package_route(body: BuildRequest):
     filters = gen_body_filters(body)
@@ -99,23 +121,8 @@ async def import_package_route(body: BuildRequest):
     if not package:
         raise HTTPException(404, detail="package does not exist")
 
-    if package.is_package:
-        package_import = await Import.create(package_id=package.id, status=BuildStatus.QUEUED, version=8)
-        await import_package_task(package.id, package_import.id)
-
-    if package.is_module:
-        subpackages = await PackageModule.filter(module_parent_package_id=package.id).all()
-        all_packages_imported = True
-        for subpackage in subpackages:
-            imports = await Import.filter(package_id=subpackage.package_id).all()
-            if not imports or len(imports) == 0:
-                all_packages_imported = False
-                await import_package_route(BuildRequest(package_id=subpackage.package_id))
-
-        if all_packages_imported:
-            package_import = await Import.create(package_id=package.id, status=BuildStatus.QUEUED, version=8,
-                                                 module=True)
-            await import_package_task(package.id, package_import.id)
+    build_order = await create_build_order(package)
+    await import_package_task(build_order[0][0], build_order[0][1], build_order[1:])
 
     return {}
 

@@ -6,10 +6,12 @@ from distrobuild.models import Repo
 
 router = APIRouter(prefix="/bootstrap")
 
+
 @router.post("/modules")
 async def bootstrap_modules():
     await process_module_dump()
     return JSONResponse(content={})
+
 
 @router.post("/{repo}")
 async def bootstrap_repo(repo: Repo):

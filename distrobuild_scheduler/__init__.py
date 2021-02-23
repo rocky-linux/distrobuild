@@ -1,7 +1,7 @@
 import json
 import logging
 
-from typing import Optional
+from typing import Tuple, Optional, List
 
 import aio_pika
 
@@ -24,11 +24,12 @@ async def init_channel(loop) -> None:
     channel = await connection.channel()
 
 
-async def import_package_task(package_id: int, import_id: int):
+async def import_package_task(package_id: int, import_id: int, dependents: List[Tuple[int, int]]):
     msg_body = {
         "message": "import_package",
         "package_id": package_id,
         "import_id": import_id,
+        "dependents": dependents,
     }
     encoded = json.dumps(msg_body).encode()
 

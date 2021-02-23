@@ -26,7 +26,7 @@ async def consume_messages(i: int):
                 body = json.loads(message.body.decode())
 
                 if body["message"] == "import_package":
-                    await import_package.task(body["package_id"], body["import_id"])
+                    await import_package.task(body["package_id"], body["import_id"], body["dependents"])
                 elif body["message"] == "build_package":
                     await build_package.task(body["package_id"], body["build_id"])
                 else:

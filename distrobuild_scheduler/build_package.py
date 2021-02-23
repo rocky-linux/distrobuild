@@ -1,3 +1,5 @@
+import datetime
+
 from tortoise.transactions import atomic
 
 from distrobuild.models import Build, BuildStatus, Package
@@ -18,6 +20,9 @@ async def do(package: Package, build: Build):
         build.koji_id = task_id
         build.status = BuildStatus.BUILDING
         await build.save()
+
+        package.last_import = datetime.datetime.now()
+        await package.save()
 
 
 # noinspection DuplicatedCode

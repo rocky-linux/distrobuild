@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS "packages" (
     "is_module" BOOL NOT NULL  DEFAULT False,
     "is_package" BOOL NOT NULL  DEFAULT False,
     "part_of_module" BOOL NOT NULL  DEFAULT False,
-    "latest_dist_commit" TEXT,
+    "last_import" TIMESTAMPTZ,
+    "last_build" TIMESTAMPTZ,
     "el8" BOOL NOT NULL  DEFAULT False,
     "repo" VARCHAR(10)
 );
@@ -17,8 +18,8 @@ CREATE TABLE IF NOT EXISTS "packagemodule" (
     "id" BIGSERIAL NOT NULL PRIMARY KEY,
     "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ,
-    "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT,
-    "module_parent_package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT
+    "module_parent_package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT,
+    "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT
 );;
 -- downgrade --
 DROP TABLE IF EXISTS "packages";

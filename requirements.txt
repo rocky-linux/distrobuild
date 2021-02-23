@@ -11,4 +11,4 @@ pydantic[dotenv]==1.7.3
 python-dotenv==0.15.0
 python-gitlab==2.6.0
 aio-pika==6.8.0
-schedule==1.0.0
+python-multipart==0.0.5

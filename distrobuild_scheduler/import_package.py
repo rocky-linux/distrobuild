@@ -1,5 +1,7 @@
 import datetime
 
+from typing import List, Tuple
+
 from tortoise.transactions import atomic
 
 from distrobuild.models import BuildStatus, Package, Import, ImportCommit
@@ -27,7 +29,7 @@ async def do(package: Package, package_import: Import):
 
 
 # noinspection DuplicatedCode
-async def task(package_id: int, import_id: int):
+async def task(package_id: int, import_id: int, dependents: List[Tuple[int, int]]):
     package = await Package.filter(id=package_id).get()
     package_import = await Import.filter(id=import_id).get()
     try:
@@ -40,3 +42,6 @@ async def task(package_id: int, import_id: int):
     finally:
         await package_import.save()
         await package.save()
+
+    if len(dependents) > 0:
+        await task(dependents[0][0], dependents[0][1], dependents[1:])
