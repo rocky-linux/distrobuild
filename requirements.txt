@@ -1,7 +1,6 @@
 fastapi==0.63.0
 tortoise-orm[asyncpg]==0.16.21
 aerich==0.5.0
-requests==2.25.1
 starlette-context==0.3.1
 aiofiles==0.6.0
 jinja2==2.11.3
@@ -12,3 +11,6 @@ python-dotenv==0.15.0
 python-gitlab==2.6.0
 aio-pika==6.8.0
 python-multipart==0.0.5
+authlib==0.15.3
+itsdangerous==1.1.0
+httpx==0.16.1

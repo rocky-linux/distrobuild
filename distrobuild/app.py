@@ -8,9 +8,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 from tortoise.contrib.fastapi import register_tortoise
 
-from distrobuild import settings
+from distrobuild.settings import TORTOISE_ORM, settings
 from distrobuild.routes import register_routes
 # init sessions
 from distrobuild import session
@@ -18,6 +19,7 @@ from distrobuild import session
 from distrobuild_scheduler import init_channel
 
 app = FastAPI()
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
 app.mount("/static/files", StaticFiles(directory="ui/dist/files"), name="static")
 register_routes(app)
 
@@ -28,9 +30,11 @@ templates = Jinja2Templates(directory="ui/dist/templates")
 async def serve_frontend(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "distribution": settings.settings.distribution,
+        "distribution": settings.distribution,
+        "authenticated": "true" if request.session.get("user") else "false",
+        "full_name": request.session["user"]["name"] if request.session.get("user") else "",
         "koji_weburl": session.koji_config.get("weburl"),
-        "gitlab_url": f"https://{settings.settings.gitlab_host}{settings.settings.repo_prefix}"
+        "gitlab_url": f"https://{settings.gitlab_host}{settings.repo_prefix}"
     })
 
 
@@ -41,5 +45,5 @@ async def startup():
 
 register_tortoise(
     app,
-    config=settings.TORTOISE_ORM
+    config=TORTOISE_ORM
 )

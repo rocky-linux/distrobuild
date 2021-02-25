@@ -5,6 +5,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     bugs_api_key: str
     gitlab_api_key: str
+    session_secret: str
 
     # srpmproc
     gitlab_host: str
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     oidc_issuer: str
     oidc_client_id: str
     oidc_client_secret: str
+    oidc_scopes: str = "https://id.fedoraproject.org/scope/groups https://mbs.rockylinux.org/oidc/mbs-submit-build"
 
     # appearance
     distribution: str = "Rocky Linux"

@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 
-from distrobuild.routes import builds, imports, packages, bootstrap
+from distrobuild.routes import builds, imports, packages, bootstrap, oidc
 
 _base_router = APIRouter(prefix="/api")
 
 
 def register_routes(app):
+    _base_router.include_router(oidc.router)
     _base_router.include_router(packages.router)
     _base_router.include_router(bootstrap.router)
     _base_router.include_router(builds.router)

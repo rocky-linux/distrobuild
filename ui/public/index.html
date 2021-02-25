@@ -13,6 +13,10 @@
       'gitlabUrl': '{{ gitlab_url }}',
       'distribution': '{{ distribution }}',
     };
+    window.STATE = {
+      'authenticated': {{ authenticated or 'false' }},
+      'full_name': '{{ full_name }}'
+    }
   </script>
 </body>
 </html>

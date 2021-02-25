@@ -30,8 +30,14 @@ export const Root = () => {
           </HeaderMenuItem>
         </HeaderNavigation>
         <HeaderNavigation className="right">
-          <HeaderMenuItem element={Link} to="/packages">
-            Packages
+          <HeaderMenuItem
+            element={window.STATE.authenticated ? Link : undefined}
+            href={
+              window.STATE.authenticated ? undefined : '/api/oidc/start_flow'
+            }
+            to={window.STATE.authenticated ? '/profile' : undefined}
+          >
+            {window.STATE.full_name || 'Login'}
           </HeaderMenuItem>
         </HeaderNavigation>
       </Header>
