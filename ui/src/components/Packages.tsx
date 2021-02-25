@@ -149,7 +149,7 @@ export const Packages = () => {
 
     (async () => {
       const ids = rowsToIds(rows);
-      await to(Axios.post(`/build${imports ? '/imports' : ''}/batch`, ids));
+      await to(Axios.post(`/${imports ? '/imports' : '/builds'}/batch`, ids));
 
       setShowImportModal(false);
       setShowBuildModal(false);
@@ -202,7 +202,6 @@ export const Packages = () => {
           getToolbarProps,
           getBatchActionProps,
           selectedRows,
-          onInputChange,
           getTableProps,
           getTableContainerProps,
         }) => (

@@ -38,13 +38,13 @@ export const Dashboard = () => {
 
   React.useEffect(() => {
     (async () => {
-      const [err, res] = await to(Axios.get('/build/imports/?size=5'));
+      const [err, res] = await to(Axios.get('/imports/?size=5'));
       if (res) {
         setImports(res.data);
       }
     })().then();
     (async () => {
-      const [err, res] = await to(Axios.get('/build/?size=5'));
+      const [err, res] = await to(Axios.get('/builds/?size=5'));
       if (res) {
         setBuilds(res.data);
       }
