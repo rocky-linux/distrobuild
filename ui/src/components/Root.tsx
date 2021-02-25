@@ -15,19 +15,25 @@ import { BrowserRouter, Link, Route, Switch } from 'react-router-dom';
 import { Packages } from './Packages';
 import { Dashboard } from './Dashboard';
 
+import '../styles/header.css';
+
 export const Root = () => {
   return (
     <BrowserRouter>
       <Header aria-label="Distrobuild">
         <HeaderName element={Link} to="/" prefix="Distrobuild">
-          [Rocky Linux]
+          [{window.SETTINGS.distribution}]
         </HeaderName>
         <HeaderNavigation>
           <HeaderMenuItem element={Link} to="/packages">
             Packages
           </HeaderMenuItem>
         </HeaderNavigation>
-        <HeaderGlobalBar></HeaderGlobalBar>
+        <HeaderNavigation className="right">
+          <HeaderMenuItem element={Link} to="/packages">
+            Packages
+          </HeaderMenuItem>
+        </HeaderNavigation>
       </Header>
       <div style={{ marginTop: '48px' }}>
         <Switch>

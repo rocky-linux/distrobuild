@@ -1,64 +1,18 @@
-from typing import Optional, List, Tuple
-
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import PlainTextResponse
-
 from fastapi_pagination import Page, pagination_params
 from fastapi_pagination.ext.tortoise import paginate
 
-from pydantic import BaseModel, validator
-
+from distrobuild.common import BuildRequest, gen_body_filters, BatchBuildRequest
 from distrobuild.models import Build, Import, ImportCommit, Package, PackageModule, BuildStatus
 from distrobuild.serialize import Build_Pydantic
+from distrobuild_scheduler import build_package_task
 
-from distrobuild_scheduler import import_package_task, build_package_task
-
-router = APIRouter(prefix="/build")
-
-
-class BuildRequest(BaseModel):
-    package_id: Optional[int]
-    package_name: Optional[str]
-
-    @validator('package_name')
-    def validate(cls, package_name, values):
-        if (not values.get('package_id') and not package_name) or (values.get('package_id') and package_name):
-            raise ValueError('either package_id or package_name is required')
-        return package_name
-
-
-class BatchBuildRequest(BaseModel):
-    packages: List[BuildRequest]
-
-
-def gen_body_filters(body_in) -> dict:
-    body = BuildRequest(**body_in)
-    if body.package_id:
-        return {"id": body.package_id}
-    if body.package_name:
-        return {"name": body.package_name}
+router = APIRouter(prefix="/builds")
 
 
 @router.get("/", response_model=Page[Build_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_builds():
     return await paginate(Build.all().order_by('-created_at').prefetch_related("package"))
-
-
-# response_model causes some weird errors with Import. why?
-# TODO: find out (removing response_model for now)
-@router.get("/imports/", dependencies=[Depends(pagination_params)])
-async def list_imports():
-    return await paginate(Import.all().order_by('-created_at').prefetch_related("package"))
-
-
-@router.get("/imports/{import_id}/logs", response_class=PlainTextResponse)
-async def get_import_logs(import_id: int):
-    import_obj = await Import.filter(id=import_id).get()
-    try:
-        with open(f"/tmp/import-{import_obj.id}.log") as f:
-            return f.read()
-    except FileNotFoundError:
-        raise HTTPException(404, detail="import not started")
 
 
 @router.post("/", status_code=202)
@@ -88,48 +42,5 @@ async def queue_build(body: BuildRequest):
 async def batch_queue_build(body: BatchBuildRequest):
     for build_request in body.packages:
         await queue_build(build_request)
-
-    return {}
-
-
-async def create_build_order(package: Package) -> List[Tuple[int, int]]:
-    pkg_list = []
-
-    if package.is_package:
-        package_import = await Import.create(package_id=package.id, status=BuildStatus.QUEUED, version=8)
-        pkg_list.append((package.id, package_import.id))
-
-    if package.is_module:
-        subpackages = await PackageModule.filter(module_parent_package_id=package.id).all()
-        for subpackage in subpackages:
-            imports = await Import.filter(package_id=subpackage.package_id).all()
-            if not imports or len(imports) == 0:
-                subpackage_package = await Package.filter(id=subpackage.package_id).get()
-                pkg_list += await create_build_order(subpackage_package)
-
-        package_module_import = await Import.create(package_id=package.id, status=BuildStatus.QUEUED, version=8,
-                                                    module=True)
-        pkg_list.append((package.id, package_module_import.id))
-
-    return pkg_list
-
-
-@router.post("/imports/", status_code=202)
-async def import_package_route(body: BuildRequest):
-    filters = gen_body_filters(body)
-    package = await Package.filter(**filters).get_or_none()
-    if not package:
-        raise HTTPException(404, detail="package does not exist")
-
-    build_order = await create_build_order(package)
-    await import_package_task(build_order[0][0], build_order[0][1], build_order[1:])
-
-    return {}
-
-
-@router.post("/imports/batch", status_code=202)
-async def batch_import_package(body: BatchBuildRequest):
-    for build_request in body.packages:
-        await import_package_route(build_request)
 
     return {}

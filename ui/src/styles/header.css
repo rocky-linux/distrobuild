@@ -1,0 +1,7 @@
+.bx--header__nav.right {
+  margin-left: auto;
+}
+
+.bx--header__nav.right::before {
+  display: none;
+}

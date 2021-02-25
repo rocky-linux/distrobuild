@@ -3,6 +3,10 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
+    bugs_api_key: str
+    gitlab_api_key: str
+
+    # srpmproc
     gitlab_host: str
     repo_prefix: str
     storage_addr: str
@@ -10,8 +14,18 @@ class Settings(BaseSettings):
     ssh_port: int = 22
     ssh_key_location: Optional[str]
     version: int = 8
-    bugs_api_key: str
-    gitlab_api_key: str
+    no_storage_download: bool = False
+    no_storage_upload: bool = False
+
+    # oidc
+    oidc_issuer: str
+    oidc_client_id: str
+    oidc_client_secret: str
+
+    # appearance
+    distribution: str = "Rocky Linux"
+
+    # scheduler options
     broker_url: str
     routing_key: str = "distrobuild"
     workers: int = 10

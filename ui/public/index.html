@@ -8,7 +8,11 @@
   <div id="root"></div>
 
   <script>
-    window.SETTINGS = {'kojiWeburl': '{{ koji_weburl}}', 'gitlabUrl': '{{ gitlab_url }}'};
+    window.SETTINGS = {
+      'kojiWeburl': '{{ koji_weburl}}',
+      'gitlabUrl': '{{ gitlab_url }}',
+      'distribution': '{{ distribution }}',
+    };
   </script>
 </body>
 </html>

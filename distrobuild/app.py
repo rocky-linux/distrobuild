@@ -28,6 +28,7 @@ templates = Jinja2Templates(directory="ui/dist/templates")
 async def serve_frontend(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
+        "distribution": settings.settings.distribution,
         "koji_weburl": session.koji_config.get("weburl"),
         "gitlab_url": f"https://{settings.settings.gitlab_host}{settings.settings.repo_prefix}"
     })

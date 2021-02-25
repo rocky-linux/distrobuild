@@ -15,7 +15,7 @@ import { IPaginated, Axios, IImport, IBuild } from '../api';
 import Link from 'carbon-components-react/lib/components/UIShell/Link';
 
 const importHeaders = ['ID', 'Initiated', 'Package', 'Status', ''];
-const buildHeaders = ['ID', 'Initiated', 'Package', 'Koji ID', 'Status'];
+const buildHeaders = ['ID', 'Initiated', 'Package', 'Status', ''];
 
 const statusToTag = (status) => {
   switch (status) {
@@ -38,13 +38,13 @@ export const Dashboard = () => {
 
   React.useEffect(() => {
     (async () => {
-      const [err, res] = await to(Axios.get('/build/imports/?size=50'));
+      const [err, res] = await to(Axios.get('/build/imports/?size=5'));
       if (res) {
         setImports(res.data);
       }
     })().then();
     (async () => {
-      const [err, res] = await to(Axios.get('/build/?size=50'));
+      const [err, res] = await to(Axios.get('/build/?size=5'));
       if (res) {
         setBuilds(res.data);
       }
@@ -78,6 +78,7 @@ export const Dashboard = () => {
                     {new Date(item.created_at).toLocaleString()}
                   </TableCell>
                   <TableCell>{item.package.name}</TableCell>
+                  <TableCell>{statusToTag(item.status)}</TableCell>
                   <TableCell>
                     <Link
                       target="_blank"
@@ -86,7 +87,6 @@ export const Dashboard = () => {
                       {item.koji_id}
                     </Link>
                   </TableCell>
-                  <TableCell>{statusToTag(item.status)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
