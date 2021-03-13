@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # mbs
     mbs_url: str
 
+    # sigul
+    sigul_config_file: str = "/etc/distrobuild/sigul.conf"
+    sigul_passphrase: str
+    sigul_key_name: str = "signing"
+    sigul_key_id: str
+
     # oidc
     oidc_issuer: str
     oidc_client_id: str

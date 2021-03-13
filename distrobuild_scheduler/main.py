@@ -3,6 +3,8 @@ import json
 
 from tortoise import Tortoise
 
+from distrobuild_scheduler.sigul import check_sigul_key
+
 Tortoise.init_models(["distrobuild.models"], "distrobuild")
 
 from distrobuild.settings import TORTOISE_ORM, settings
@@ -35,19 +37,22 @@ async def consume_messages(i: int):
                     logger.error("[*] Received unknown message")
 
 
-async def schedule_periodic_tasks():
+def schedule_periodic_tasks():
     asyncio.create_task(periodic_tasks.check_build_status())
 
 
 async def main(loop):
-    await Tortoise.init(config=TORTOISE_ORM)
-    await init_channel(loop)
+    try:
+        await Tortoise.init(config=TORTOISE_ORM)
+        await init_channel(loop)
 
-    await schedule_periodic_tasks()
+        await check_sigul_key()
 
-    tasks = [consume_messages(i) for i in range(0, settings.workers)]
-    await asyncio.wait(tasks)
+        schedule_periodic_tasks()
 
-    from distrobuild_scheduler import connection
-    logger.info("[*] Shutting down")
-    await connection.close()
+        tasks = [consume_messages(i) for i in range(0, settings.workers)]
+        await asyncio.wait(tasks)
+    finally:
+        from distrobuild_scheduler import connection
+        logger.info("[*] Shutting down")
+        await connection.close()
