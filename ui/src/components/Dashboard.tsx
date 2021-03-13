@@ -23,6 +23,8 @@ const statusToTag = (status) => {
       return <Tag type="gray">Queued</Tag>;
     case 'BUILDING':
       return <Tag type="blue">Building</Tag>;
+    case 'IN_PROGRESS':
+      return <Tag type="blue">In progress</Tag>;
     case 'SUCCEEDED':
       return <Tag type="green">Succeeded</Tag>;
     case 'FAILED':
@@ -38,13 +40,13 @@ export const Dashboard = () => {
 
   React.useEffect(() => {
     (async () => {
-      const [err, res] = await to(Axios.get('/imports/?size=5'));
+      const [, res] = await to(Axios.get('/imports/?size=5'));
       if (res) {
         setImports(res.data);
       }
     })().then();
     (async () => {
-      const [err, res] = await to(Axios.get('/builds/?size=5'));
+      const [, res] = await to(Axios.get('/builds/?size=5'));
       if (res) {
         setBuilds(res.data);
       }
@@ -53,7 +55,7 @@ export const Dashboard = () => {
 
   return (
     <>
-      <div style={{ padding: '20px 30px' }}>
+      <div style={{ padding: '20px 20px' }}>
         <h4>Latest builds</h4>
         {!builds && (
           <DataTableSkeleton
@@ -82,9 +84,13 @@ export const Dashboard = () => {
                   <TableCell>
                     <Link
                       target="_blank"
-                      href={`${window.SETTINGS.kojiWeburl}/taskinfo?taskID=${item.koji_id}`}
+                      href={`${window.SETTINGS.gitlabUrl}${
+                        window.SETTINGS.repoPrefix
+                      }/${item.package.is_module ? 'modules' : 'rpms'}/${
+                        item.package.name
+                      }/-/commit/${item.commit}`}
                     >
-                      {item.koji_id}
+                      {item.branch}
                     </Link>
                   </TableCell>
                 </TableRow>
@@ -93,7 +99,7 @@ export const Dashboard = () => {
           </Table>
         )}
       </div>
-      <div style={{ padding: '20px 30px' }}>
+      <div style={{ padding: '20px 20px' }}>
         <h4>Latest imports</h4>
         {!imports && (
           <DataTableSkeleton
@@ -117,17 +123,15 @@ export const Dashboard = () => {
                   <TableCell>
                     {new Date(item.created_at).toLocaleString()}
                   </TableCell>
-                  <TableCell>{item._package.name}</TableCell>
+                  <TableCell>{item.package.name}</TableCell>
                   <TableCell>{statusToTag(item.status)}</TableCell>
                   <TableCell>
-                    <Link href={`/api/build/imports/${item.id}/logs`}>
-                      Logs
-                    </Link>
+                    <Link href={`/api/imports/${item.id}/logs`}>Logs</Link>
                     {item.commit && (
                       <Link
                         style={{ marginLeft: '10px' }}
                         target="_blank"
-                        href={`${window.SETTINGS.gitlabUrl}/rpms/${item._package.name}/-/commit/${item.commit}`}
+                        href={`${window.SETTINGS.gitlabUrl}/rpms/${item.package.name}/-/commit/${item.commit}`}
                       >
                         GitLab commit
                       </Link>

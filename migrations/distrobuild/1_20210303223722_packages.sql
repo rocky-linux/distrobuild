@@ -4,23 +4,24 @@ CREATE TABLE IF NOT EXISTS "packages" (
     "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ,
     "name" VARCHAR(255) NOT NULL,
-    "responsible_user_id" VARCHAR(255),
+    "responsible_username" VARCHAR(255) NOT NULL,
     "is_module" BOOL NOT NULL  DEFAULT False,
     "is_package" BOOL NOT NULL  DEFAULT False,
     "part_of_module" BOOL NOT NULL  DEFAULT False,
     "last_import" TIMESTAMPTZ,
     "last_build" TIMESTAMPTZ,
     "el8" BOOL NOT NULL  DEFAULT False,
-    "repo" VARCHAR(10)
+    "el9" BOOL NOT NULL  DEFAULT False,
+    "repo" VARCHAR(17)
 );
-COMMENT ON COLUMN "packages"."repo" IS 'BASEOS: BASEOS\nAPPSTREAM: APPSTREAM\nPOWERTOOLS: POWERTOOLS';;
-CREATE TABLE IF NOT EXISTS "packagemodule" (
+COMMENT ON COLUMN "packages"."repo" IS 'BASEOS: BASEOS\nAPPSTREAM: APPSTREAM\nPOWERTOOLS: POWERTOOLS\nEXTERNAL: EXTERNAL\nMODULAR_CANDIDATE: MODULAR_CANDIDATE\nORIGINAL: ORIGINAL\nINFRA: INFRA';;
+CREATE TABLE IF NOT EXISTS "package_modules" (
     "id" BIGSERIAL NOT NULL PRIMARY KEY,
     "created_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ,
-    "module_parent_package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT,
-    "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT
+    "package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT,
+    "module_parent_package_id" BIGINT NOT NULL REFERENCES "packages" ("id") ON DELETE RESTRICT
 );;
 -- downgrade --
+DROP TABLE IF EXISTS "package_modules";
 DROP TABLE IF EXISTS "packages";
-DROP TABLE IF EXISTS "packagemodule";

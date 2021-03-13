@@ -45,7 +45,7 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
 
     last_line = ""
     while True:
-        line = (await proc.stdout.readline()).decode('utf-8')
+        line = (await proc.stdout.readline()).decode("utf-8")
         f.write(line)
 
         if proc.stdout.at_eof():

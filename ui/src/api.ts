@@ -2,6 +2,7 @@ import axios from 'axios';
 
 export const Axios = axios.create({
   baseURL: '/api',
+  withCredentials: true,
 });
 
 export interface IPaginated<T> {
@@ -14,10 +15,12 @@ export interface IPaginated<T> {
 export interface IPackage {
   id: string;
   name: string;
+  el8: boolean;
   is_module: boolean;
   is_package: boolean;
   part_of_module: boolean;
   last_import: string;
+  repo: string;
 }
 
 export interface IImport {
@@ -25,7 +28,7 @@ export interface IImport {
   created_at: string;
   status: string;
   commit: string;
-  _package: IPackage;
+  package: IPackage;
 }
 
 export interface IBuild {
@@ -33,5 +36,7 @@ export interface IBuild {
   created_at: string;
   status: string;
   koji_id: string;
+  branch: string;
+  commit: string;
   package: IPackage;
 }

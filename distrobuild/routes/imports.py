@@ -1,20 +1,44 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi_pagination import pagination_params
+from typing import Optional, List, Dict
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi_pagination import pagination_params, Page
 from fastapi_pagination.ext.tortoise import paginate
+from pydantic import BaseModel, validator
 from starlette.responses import PlainTextResponse
 
-from distrobuild.common import BuildRequest, gen_body_filters, BatchBuildRequest, create_build_order
-from distrobuild.models import Import, Package
+from distrobuild.common import gen_body_filters, create_import_order, get_user
+from distrobuild.models import Import, Package, Repo
+from distrobuild.serialize import Import_Pydantic
 from distrobuild_scheduler import import_package_task
 
 router = APIRouter(prefix="/imports")
 
 
-# response_model causes some weird errors with Import. why?
-# TODO: find out (removing response_model for now)
-@router.get("/", dependencies=[Depends(pagination_params)])
+class ImportRequest(BaseModel):
+    full_history: bool = False
+    single_tag: Optional[str]
+    package_id: Optional[int]
+    package_name: Optional[str]
+
+    @validator("package_name")
+    def validate(cls, package_name, values):
+        if (not values.get("package_id") and not package_name) or (values.get("package_id") and package_name):
+            raise ValueError("either package_id or package_name is required")
+        return package_name
+
+
+class BatchImportRequest(BaseModel):
+    packages: List[ImportRequest]
+
+
+@router.get("/", response_model=Page[Import_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_imports():
-    return await paginate(Import.all().order_by('-created_at').prefetch_related("package"))
+    return await paginate(Import.all().order_by("-created_at").prefetch_related("package"))
+
+
+@router.get("/{import_id}", response_model=Import_Pydantic)
+async def get_import(import_id: int):
+    return await Import_Pydantic.from_queryset_single(Import.filter(id=import_id).prefetch_related("package").first())
 
 
 @router.get("/{import_id}/logs", response_class=PlainTextResponse)
@@ -30,21 +54,26 @@ async def get_import_logs(import_id: int):
 
 
 @router.post("/", status_code=202)
-async def import_package_route(body: BuildRequest):
+async def import_package_route(request: Request, body: Dict[str, ImportRequest]):
+    user = get_user(request)
+
     filters = gen_body_filters(body)
     package = await Package.filter(**filters).get_or_none()
     if not package:
         raise HTTPException(404, detail="package does not exist")
 
-    build_order = await create_build_order(package)
+    if package.repo == Repo.MODULAR_CANDIDATE:
+        raise HTTPException(401, detail="modular subpackages cannot be imported")
+
+    build_order = await create_import_order(package, user["preferred_username"])
     await import_package_task(build_order[0][0], build_order[0][1], build_order[1:])
 
     return {}
 
 
 @router.post("/batch", status_code=202)
-async def batch_import_package(body: BatchBuildRequest):
+async def batch_import_package(request: Request, body: BatchImportRequest):
     for build_request in body.packages:
-        await import_package_route(build_request)
+        await import_package_route(request, dict(build_request))
 
     return {}

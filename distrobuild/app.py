@@ -19,22 +19,32 @@ from distrobuild import session
 from distrobuild_scheduler import init_channel
 
 app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key=settings.session_secret)
+app.add_middleware(SessionMiddleware, secret_key=settings.session_secret, max_age=3500)
 app.mount("/static/files", StaticFiles(directory="ui/dist/files"), name="static")
 register_routes(app)
 
 templates = Jinja2Templates(directory="ui/dist/templates")
+static_templates = Jinja2Templates(directory="distrobuild/templates")
 
 
 @app.get("/{full_path:path}", response_class=HTMLResponse, include_in_schema=False)
 async def serve_frontend(request: Request):
+    not_authorized_message = request.session.get("not_authorized")
+    if not_authorized_message:
+        request.session.pop("not_authorized")
+        return static_templates.TemplateResponse("not_authorized.html.j2", {
+            "request": request,
+            "message": not_authorized_message,
+        })
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "distribution": settings.distribution,
         "authenticated": "true" if request.session.get("user") else "false",
-        "full_name": request.session["user"]["name"] if request.session.get("user") else "",
+        "full_name": request.session.get("user").get("name") if request.session.get("user") else "",
         "koji_weburl": session.koji_config.get("weburl"),
-        "gitlab_url": f"https://{settings.gitlab_host}{settings.repo_prefix}"
+        "gitlab_url": f"https://{settings.gitlab_host}",
+        "repo_prefix": settings.repo_prefix
     })
 
 

@@ -1,9 +1,10 @@
 import asyncio
+import datetime
 
 import koji
 
-from distrobuild.models import Build, BuildStatus
-from distrobuild.session import koji_session
+from distrobuild.models import Build, BuildStatus, Package
+from distrobuild.session import koji_session, mbs_client
 
 from distrobuild_scheduler import logger
 
@@ -18,6 +19,10 @@ async def check_build_status():
                 if task_info["state"] == koji.TASK_STATES["CLOSED"]:
                     build.status = BuildStatus.SUCCEEDED
                     await build.save()
+
+                    package = await Package.filter(id=build.package_id).get()
+                    package.last_build = datetime.datetime.now()
+                    await package.save()
                 elif task_info["state"] == koji.TASK_STATES["CANCELED"]:
                     build.status = BuildStatus.CANCELLED
                     await build.save()
@@ -31,6 +36,19 @@ async def check_build_status():
                         build.status = BuildStatus.CANCELLED
                     finally:
                         await build.save()
+            elif build.mbs_id:
+                build_info = await mbs_client.get_build(build.mbs_id)
+                state = build_info["state_name"]
+                if state == "ready":
+                    build.status = BuildStatus.SUCCEEDED
+                    await build.save()
+
+                    package = await Package.filter(id=build.package_id).get()
+                    package.last_build = datetime.datetime.now()
+                    await package.save()
+                elif state == "failed":
+                    build.status = BuildStatus.FAILED
+                    await build.save()
 
         # run every 5 minutes
         await asyncio.sleep(60 * 5)

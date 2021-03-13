@@ -7,9 +7,7 @@ Tortoise.init_models(["distrobuild.models"], "distrobuild")
 
 from distrobuild.settings import TORTOISE_ORM, settings
 
-# preload koji session
-# noinspection PyUnresolvedReferences
-import distrobuild.session
+from distrobuild.session import message_cipher
 
 # noinspection PyUnresolvedReferences
 from distrobuild_scheduler import init_channel, build_package, import_package, logger, periodic_tasks
@@ -20,15 +18,19 @@ async def consume_messages(i: int):
 
     queue = await channel.declare_queue(settings.routing_key, auto_delete=False)
     async with queue.iterator() as queue_iter:
-        logger.info("[*] Waiting for messages (worker {})".format(i))
+        logger.info(f"[*] Waiting for messages (worker {i})")
         async for message in queue_iter:
             async with message.process():
                 body = json.loads(message.body.decode())
+                msg = body.get("message")
 
-                if body["message"] == "import_package":
+                if msg == "import_package":
                     await import_package.task(body["package_id"], body["import_id"], body["dependents"])
-                elif body["message"] == "build_package":
-                    await build_package.task(body["package_id"], body["build_id"])
+                elif msg == "build_package":
+                    token = body.get("token")
+                    if token:
+                        token = message_cipher.decrypt(token.encode()).decode()
+                    await build_package.task(body["package_id"], body["build_id"], token)
                 else:
                     logger.error("[*] Received unknown message")
 

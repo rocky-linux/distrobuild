@@ -2,13 +2,9 @@ import React from 'react';
 import {
   Header,
   HeaderName,
-  HeaderGlobalBar,
-  HeaderGlobalAction,
   HeaderNavigation,
   HeaderMenuItem,
 } from 'carbon-components-react/lib/components/UIShell';
-
-import { Search20 } from '@carbon/icons-react';
 
 import 'carbon-components/css/carbon-components.min.css';
 import { BrowserRouter, Link, Route, Switch } from 'react-router-dom';
@@ -37,7 +33,7 @@ export const Root = () => {
             }
             to={window.STATE.authenticated ? '/profile' : undefined}
           >
-            {window.STATE.full_name || 'Login'}
+            {window.STATE.fullName || 'Login'}
           </HeaderMenuItem>
         </HeaderNavigation>
       </Header>

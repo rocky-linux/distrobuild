@@ -28,7 +28,7 @@ import {
 
 import { Axios, IPackage, IPaginated } from '../api';
 import { IPageChangeEvent } from '../misc';
-import { CloudUpload16, Development16, Save16 } from '@carbon/icons-react';
+import { CloudUpload16, Development16} from '@carbon/icons-react';
 
 export const Packages = () => {
   const [showImportModal, setShowImportModal] = React.useState(false);
@@ -38,10 +38,14 @@ export const Packages = () => {
   const [rows, setRows] = React.useState([]);
 
   const [page, setPage] = React.useState(0);
-  const [size, setSize] = React.useState(50);
+  const [size, setSize] = React.useState(25);
   const [nameFilter, setNameFilter] = React.useState(null);
   const [modulesOnlyFilter, setModulesOnlyFilter] = React.useState(false);
   const [nonModulesOnlyFilter, setNonModulesOnlyFilter] = React.useState(false);
+  const [
+    excludeModularCandidatesFilter,
+    setExcludeModularCandidatesFilter,
+  ] = React.useState(false);
   const [searchTimeout, setSearchTimeout] = React.useState<NodeJS.Timeout>(
     null
   );
@@ -51,7 +55,7 @@ export const Packages = () => {
 
   React.useEffect(() => {
     (async () => {
-      const [err, res] = await to(
+      const [, res] = await to(
         Axios.get('/packages/', {
           params: {
             page,
@@ -59,6 +63,7 @@ export const Packages = () => {
             name: nameFilter,
             modules_only: modulesOnlyFilter,
             non_modules_only: nonModulesOnlyFilter,
+            exclude_modular_candidates: excludeModularCandidatesFilter,
           },
         })
       );
@@ -70,12 +75,21 @@ export const Packages = () => {
         setPackageRes(res.data);
       }
     })().then();
-  }, [page, size, nameFilter, modulesOnlyFilter, nonModulesOnlyFilter]);
+  }, [
+    page,
+    size,
+    nameFilter,
+    modulesOnlyFilter,
+    nonModulesOnlyFilter,
+    excludeModularCandidatesFilter,
+  ]);
 
   const headers = [
     { header: 'Name', key: 'name' },
     { header: 'Tags', key: 'tags' },
     { header: 'Last import', key: 'last_import' },
+    { header: 'Last build', key: 'last_build' },
+    { header: 'Responsible user', key: 'responsible_username' },
   ];
 
   const onPageChange = (e: IPageChangeEvent) => {
@@ -121,6 +135,10 @@ export const Packages = () => {
     }
   };
 
+  const toggleExcludeModularesCandidates = () => {
+    setExcludeModularCandidatesFilter(!excludeModularCandidatesFilter);
+  };
+
   const rowsToIds = (rows) =>
     rows.reduce(
       (a, b) =>
@@ -132,13 +150,13 @@ export const Packages = () => {
     );
 
   const importRows = (rows) => {
-    return (e) => {
+    return () => {
       setShowImportModal(true);
       setRows(rows);
     };
   };
   const buildRows = (rows) => {
-    return (e) => {
+    return () => {
       setShowBuildModal(true);
       setRows(rows);
     };
@@ -149,7 +167,14 @@ export const Packages = () => {
 
     (async () => {
       const ids = rowsToIds(rows);
-      await to(Axios.post(`/${imports ? '/imports' : '/builds'}/batch`, ids));
+      const [err, ] = await to(
+        Axios.post(`${imports ? '/imports' : '/builds'}/batch`, ids)
+      );
+      if (err) {
+        alert('API Error');
+        setDisable(false);
+        return;
+      }
 
       setShowImportModal(false);
       setShowBuildModal(false);
@@ -244,8 +269,17 @@ export const Packages = () => {
                   <TableToolbarAction onClick={toggleNonModulesOnly}>
                     <Checkbox
                       id="non_modules_only"
-                      labelText="Non-modules only"
+                      labelText="Packages only"
                       checked={nonModulesOnlyFilter}
+                    />
+                  </TableToolbarAction>
+                  <TableToolbarAction
+                    onClick={toggleExcludeModularesCandidates}
+                  >
+                    <Checkbox
+                      id="exclude_modular_candidates"
+                      labelText="Exclude MC"
+                      checked={excludeModularCandidatesFilter}
                     />
                   </TableToolbarAction>
                 </TableToolbarMenu>
@@ -254,7 +288,9 @@ export const Packages = () => {
             <Table {...getTableProps()}>
               <TableHead>
                 <TableRow>
-                  <TableSelectAll {...getSelectionProps()} />
+                  {window.STATE.authenticated && (
+                    <TableSelectAll {...getSelectionProps()} />
+                  )}
                   {headers.map((header, i) => (
                     <TableHeader key={i} {...getHeaderProps({ header })}>
                       {header.header}
@@ -263,54 +299,100 @@ export const Packages = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, i) => (
-                  <TableRow key={i} {...getRowProps({ row })}>
-                    <TableSelectRow {...getSelectionProps({ row })} />
-                    {row.cells.map((cell) => {
-                      const pkg: IPackage | undefined =
-                        packageRes.items[
-                          packageRes.items.findIndex(
-                            (x) =>
-                              x.id.toString().trim() ===
-                              cell.id.split(':')[0].trim()
-                          )
-                        ];
+                {rows.map((row, i) => {
+                  const pkg: IPackage | undefined =
+                    packageRes.items[
+                      packageRes.items.findIndex(
+                        (x) =>
+                          x.id.toString().trim() === row.id.toString().trim()
+                      )
+                    ];
 
-                      return (
+                  if (!pkg) {
+                    return;
+                  }
+
+                  return (
+                    <TableRow key={i} {...getRowProps({ row })}>
+                      {window.STATE.authenticated ? (
+                        pkg.is_package || pkg.is_module ? (
+                          <TableSelectRow {...getSelectionProps({ row })} />
+                        ) : (
+                          <TableCell />
+                        )
+                      ) : (
+                        <></>
+                      )}
+                      {row.cells.map((cell) => (
                         <>
-                          {cell.info.header === 'name' && (
+                          {[
+                            'tags',
+                            'last_import',
+                            'last_build',
+                            'responsible_username',
+                          ].includes(cell.info.header) ? (
+                            <>
+                              {pkg && cell.info.header === 'tags' && (
+                                <TableCell key={`${cell.id}-tags`}>
+                                  {pkg.el8 && <Tag type="blue">EL8</Tag>}
+                                  {pkg.is_module && (
+                                    <Tag type="green">Module</Tag>
+                                  )}
+                                  {pkg.is_package && (
+                                    <Tag type="cool-gray">Package</Tag>
+                                  )}
+                                  {pkg.part_of_module && (
+                                    <Tag type="cyan">Part of module</Tag>
+                                  )}
+                                  {pkg.repo === 'MODULAR_CANDIDATE' && (
+                                    <Tag type="warm-gray">
+                                      Modular candidate
+                                    </Tag>
+                                  )}
+                                </TableCell>
+                              )}
+                              {cell.info.header === 'responsible_username' && (
+                                <TableCell key={cell.value}>
+                                  <a
+                                    target="_blank"
+                                    href={`${window.SETTINGS.gitlabUrl}/${cell.value}`}
+                                  >
+                                    {cell.value}
+                                  </a>
+                                </TableCell>
+                              )}
+                              {['last_import', 'last_build'].includes(
+                                cell.info.header
+                              ) &&
+                                (pkg.is_module ||
+                                pkg.is_package ||
+                                pkg.part_of_module ? (
+                                  <TableCell
+                                    key={`${cell.id}-dist-${cell.value}`}
+                                  >
+                                    <Tag type={cell.value ? 'green' : 'red'}>
+                                      {cell.value
+                                        ? new Date(cell.value).toLocaleString()
+                                        : 'Never'}
+                                    </Tag>
+                                  </TableCell>
+                                ) : (
+                                  <TableCell />
+                                ))}
+                            </>
+                          ) : (
                             <TableCell key={cell.value}>{cell.value}</TableCell>
                           )}
-                          {pkg && cell.info.header === 'tags' && (
-                            <TableCell key={`${cell.id}-tags`}>
-                              {pkg.is_module && <Tag type="green">Module</Tag>}
-                              {pkg.is_package && (
-                                <Tag type="cool-gray">Package</Tag>
-                              )}
-                              {pkg.part_of_module && (
-                                <Tag type="cyan">Part of module</Tag>
-                              )}
-                            </TableCell>
-                          )}
-                          {cell.info.header === 'last_import' && (
-                            <TableCell key={`${cell.id}-dist-${cell.value}`}>
-                              <Tag type={cell.value ? 'green' : 'red'}>
-                                {cell.value
-                                  ? new Date(cell.value).toLocaleString()
-                                  : 'Never'}
-                              </Tag>
-                            </TableCell>
-                          )}
                         </>
-                      );
-                    })}
-                  </TableRow>
-                ))}
+                      ))}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
             <Pagination
               totalItems={packageRes.total}
-              pageSizes={[50]}
+              pageSizes={[25, 50, 100]}
               onChange={onPageChange}
             />
           </TableContainer>

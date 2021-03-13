@@ -11,11 +11,12 @@
     window.SETTINGS = {
       'kojiWeburl': '{{ koji_weburl}}',
       'gitlabUrl': '{{ gitlab_url }}',
+      'repoPrefix': '{{ repo_prefix }}',
       'distribution': '{{ distribution }}',
     };
     window.STATE = {
       'authenticated': {{ authenticated or 'false' }},
-      'full_name': '{{ full_name }}'
+      'fullName': '{{ full_name }}'
     }
   </script>
 </body>

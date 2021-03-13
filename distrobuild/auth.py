@@ -9,7 +9,7 @@ oauth.register(
     client_secret=settings.oidc_client_secret,
     server_metadata_url=f"{settings.oidc_issuer}/.well-known/openid-configuration",
     client_kwargs={
-        "scope": f"openid profile {settings.oidc_scopes}"
+        "scope": f"openid profile groups {settings.oidc_scopes}"
     }
 )
 

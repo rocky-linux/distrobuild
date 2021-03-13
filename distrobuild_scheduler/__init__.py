@@ -41,11 +41,12 @@ async def import_package_task(package_id: int, import_id: int, dependents: List[
     )
 
 
-async def build_package_task(package_id: int, build_id: int):
+async def build_package_task(package_id: int, build_id: int, token: Optional[str]):
     msg_body = {
         "message": "build_package",
         "package_id": package_id,
         "build_id": build_id,
+        "token": token,
     }
     encoded = json.dumps(msg_body).encode()
 
