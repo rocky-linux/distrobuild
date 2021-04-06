@@ -1,5 +1,7 @@
 # distrobuild
 
+**THIS PROJECT IS STILL A WORK IN PROGRESS**
+
 ### Development
 
 ### Kerberos
@@ -26,7 +28,6 @@ uvicorn distrobuild.app:app --reload --port 8090
 
 #### Scheduler
 ```
-virtualenv .venv
 source .venv/bin/activate
 python3 run_scheduler.py
 ```
