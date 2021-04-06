@@ -28,6 +28,9 @@ class MBSClient:
             return r.json()
 
     async def build(self, token: str, name: str, branch: str, commit: str) -> int:
+        scmurl = f"https://{settings.gitlab_host}{settings.repo_prefix}/modules/{name}?#{commit}"
+        print(scmurl)
+
         client = httpx.AsyncClient()
         async with client:
             r = await client.post(
@@ -36,7 +39,7 @@ class MBSClient:
                     "Authorization": f"Bearer {token}"
                 },
                 json={
-                    "scmurl": f"https://{settings.gitlab_host}{settings.repo_prefix}/modules/{name}?#{commit}",
+                    "scmurl": scmurl,
                     "branch": branch,
                 }
             )
@@ -45,4 +48,5 @@ class MBSClient:
                 raise MBSConflictException()
 
             data = r.json()
+            print(data)
             return data["id"]

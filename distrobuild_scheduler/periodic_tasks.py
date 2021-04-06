@@ -27,13 +27,14 @@ async def atomic_check_build_status():
                 await package.save()
 
                 # sign artifacts
-                build_tasks = koji_session.listBuilds(taskID=build.koji_id)
-                for build_task in build_tasks:
-                    build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
-                    for rpm in build_rpms:
-                        nvr_arch = "%s.%s" % (rpm["nvr"], rpm["arch"])
-                        await sign_koji_package(nvr_arch)
-                        koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
+                if not settings.disable_sigul:
+                    build_tasks = koji_session.listBuilds(taskID=build.koji_id)
+                    for build_task in build_tasks:
+                        build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
+                        for rpm in build_rpms:
+                            nvr_arch = "%s.%s" % (rpm["nvr"], rpm["arch"])
+                            await sign_koji_package(nvr_arch)
+                            koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
             elif task_info["state"] == koji.TASK_STATES["CANCELED"]:
                 build.status = BuildStatus.CANCELLED
                 await build.save()
@@ -65,6 +66,7 @@ async def atomic_check_build_status():
 async def check_build_status():
     while True:
         logger.debug("[*] Running periodic task: check_build_status")
+
         await atomic_check_build_status()
 
         # run every 5 minutes

@@ -7,10 +7,10 @@ from distrobuild.settings import settings
 
 
 def gen_body_filters(body: dict) -> dict:
-    if body["package_id"]:
-        return {"id": body["package_id"]}
-    if body["package_name"]:
+    if body.get("package_name"):
         return {"name": body["package_name"]}
+    if body.get("package_id"):
+        return {"id": body["package_id"]}
 
 
 async def create_import_order(package: Package, username: str) -> List[Tuple[int, int]]:

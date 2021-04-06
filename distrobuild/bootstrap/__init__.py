@@ -17,7 +17,11 @@ async def process_repo_dump(repo: Repo, responsible_username: str) -> None:
         lines = f.readlines()
         for line in lines:
             package_name = line.strip()
-            if await Package.filter(name=package_name).get_or_none():
+            existing_package = await Package.filter(name=package_name).get_or_none()
+            if existing_package:
+                existing_package.repo = repo
+                existing_package.is_package = True
+                await existing_package.save()
                 continue
             await _internal_create_package(name=package_name,
                                            is_package=True,

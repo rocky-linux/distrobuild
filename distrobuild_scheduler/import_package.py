@@ -9,6 +9,8 @@ from distrobuild.session import koji_session, gl
 from distrobuild.settings import settings
 from distrobuild import srpmproc
 
+from distrobuild_scheduler.utils import gitlabify
+
 
 @atomic()
 async def do(package: Package, package_import: Import):
@@ -27,7 +29,7 @@ async def do(package: Package, package_import: Import):
     package.last_import = datetime.datetime.now()
 
     mode = "modules" if package_import.module else "rpms"
-    project = gl.projects.get(f"{settings.repo_prefix.removeprefix('/')}/{mode}/{package.name}")
+    project = gl.projects.get(f"{settings.repo_prefix.removeprefix('/')}/{mode}/{gitlabify(package.name)}")
     project.visibility = "public"
     project.save()
 

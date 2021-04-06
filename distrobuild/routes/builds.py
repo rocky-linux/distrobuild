@@ -55,7 +55,7 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest]):
     if package.repo == Repo.MODULAR_CANDIDATE:
         raise HTTPException(401, detail="modular subpackages cannot be built, build the main module")
 
-    if package.part_of_module:
+    if package.part_of_module and not package.is_module:
         raise HTTPException(401, detail="this package is part of a module. build the main module")
 
     extras = {
@@ -63,7 +63,7 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest]):
     }
     token = None
     package_modules = await PackageModule.filter(package_id=package.id)
-    if len(package_modules) > 0:
+    if len(package_modules) > 0 or package.is_module:
         extras["mbs"] = True
         token = message_cipher.encrypt(request.session.get("token").encode()).decode()
 
@@ -78,7 +78,7 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest]):
     for import_commit in import_commits:
         if "-beta" not in import_commit.branch:
             build = await Build.create(package_id=package.id, status=BuildStatus.QUEUED,
-                                       executor_username=user["preferred_username"], point_release="8_4",
+                                       executor_username=user["preferred_username"], point_release="8_3",
                                        import_commit_id=import_commit.id, **extras)
             await build_package_task(package.id, build.id, token)
 

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     mbs_url: str
 
     # sigul
+    disable_sigul: bool = False
     sigul_config_file: str = "/etc/distrobuild/sigul.conf"
     sigul_passphrase: str
     sigul_key_name: str = "signing"

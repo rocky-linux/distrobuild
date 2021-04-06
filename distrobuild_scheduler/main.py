@@ -46,7 +46,8 @@ async def main(loop):
         await Tortoise.init(config=TORTOISE_ORM)
         await init_channel(loop)
 
-        await check_sigul_key()
+        if not settings.disable_sigul:
+            await check_sigul_key()
 
         schedule_periodic_tasks()
 
