@@ -169,12 +169,15 @@ export const BatchShow = <T extends unknown>(props: BatchShowProps) => {
       <Tile className="flex items-center justify-between">
         <h3>Batch #{params.id}</h3>
         <div className="flex space-x-4">
-          {!shouldShowCancel && failedItems && failedItems.length > 0 && (
-            <Button onClick={() => setShowRetryModal(true)}>
-              Retry failed
-            </Button>
-          )}
-          {shouldShowCancel && (
+          {window.STATE.authenticated &&
+            !shouldShowCancel &&
+            failedItems &&
+            failedItems.length > 0 && (
+              <Button onClick={() => setShowRetryModal(true)}>
+                Retry failed
+              </Button>
+            )}
+          {window.STATE.authenticated && shouldShowCancel && (
             <Button
               kind="danger--ghost"
               onClick={() => setShowCancelModal(true)}
@@ -192,68 +195,92 @@ export const BatchShow = <T extends unknown>(props: BatchShowProps) => {
       )}
 
       {(res || res === undefined) && (
-        <div className="mt-4 flex w-full space-x-10">
-          <div className="w-1/2">
-            <h5 className="mb-2">Failed {props.name}</h5>
-            {res && (
-              <>
-                {props.name === 'builds' && (
-                  <BuildsTable
-                    builds={{
-                      items: failedItems,
-                      size: res[props.name].length,
-                      page: 0,
-                      total: res[props.name].length,
-                    }}
-                  />
+        <>
+          {res && (
+            <div className="space-y-1">
+              <div
+                style={{
+                  width: `${Math.round(
+                    ((failedItems.length + succeededItems.length) /
+                      res[props.name].length) *
+                      100
+                  )}%`,
+                }}
+                className="bg-blue-600 h-1"
+              />
+              <div className="font-bold">
+                {Math.round(
+                  ((failedItems.length + succeededItems.length) /
+                    res[props.name].length) *
+                    100
                 )}
-                {props.name === 'imports' && (
-                  <ImportsTable
-                    imports={{
-                      items: failedItems,
-                      size: res[props.name].length,
-                      page: 0,
-                      total: res[props.name].length,
-                    }}
-                  />
-                )}
-              </>
-            )}
-            {res === undefined && (
-              <DataTableSkeleton showToolbar={false} columnCount={5} />
-            )}
+                %
+              </div>
+            </div>
+          )}
+          <div className="mt-6 flex w-full space-x-10">
+            <div className="w-1/2">
+              <h5 className="mb-2">Failed {props.name}</h5>
+              {res && (
+                <>
+                  {props.name === 'builds' && (
+                    <BuildsTable
+                      builds={{
+                        items: failedItems,
+                        size: res[props.name].length,
+                        page: 0,
+                        total: res[props.name].length,
+                      }}
+                    />
+                  )}
+                  {props.name === 'imports' && (
+                    <ImportsTable
+                      imports={{
+                        items: failedItems,
+                        size: res[props.name].length,
+                        page: 0,
+                        total: res[props.name].length,
+                      }}
+                    />
+                  )}
+                </>
+              )}
+              {res === undefined && (
+                <DataTableSkeleton showToolbar={false} columnCount={5} />
+              )}
+            </div>
+            <div className="w-1/2">
+              <h5 className="mb-2">Succeeded {props.name}</h5>
+              {res && (
+                <>
+                  {props.name === 'builds' && (
+                    <BuildsTable
+                      builds={{
+                        items: succeededItems,
+                        size: res[props.name].length,
+                        page: 0,
+                        total: res[props.name].length,
+                      }}
+                    />
+                  )}
+                  {props.name === 'imports' && (
+                    <ImportsTable
+                      imports={{
+                        items: succeededItems,
+                        size: res[props.name].length,
+                        page: 0,
+                        total: res[props.name].length,
+                      }}
+                    />
+                  )}
+                </>
+              )}
+              {res === undefined && (
+                <DataTableSkeleton showToolbar={false} columnCount={5} />
+              )}
+            </div>
           </div>
-          <div className="w-1/2">
-            <h5 className="mb-2">Succeeded {props.name}</h5>
-            {res && (
-              <>
-                {props.name === 'builds' && (
-                  <BuildsTable
-                    builds={{
-                      items: succeededItems,
-                      size: res[props.name].length,
-                      page: 0,
-                      total: res[props.name].length,
-                    }}
-                  />
-                )}
-                {props.name === 'imports' && (
-                  <ImportsTable
-                    imports={{
-                      items: succeededItems,
-                      size: res[props.name].length,
-                      page: 0,
-                      total: res[props.name].length,
-                    }}
-                  />
-                )}
-              </>
-            )}
-            {res === undefined && (
-              <DataTableSkeleton showToolbar={false} columnCount={5} />
-            )}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

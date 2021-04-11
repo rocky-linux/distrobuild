@@ -179,12 +179,14 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
             {...getTableContainerProps()}
           >
             <TableToolbar {...getToolbarProps()}>
-              <Button
-                className="ml-auto"
-                onClick={() => setShowCreateModal(true)}
-              >
-                Create new batch
-              </Button>
+              {window.STATE.authenticated && (
+                <Button
+                  className="ml-auto"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  Create new batch
+                </Button>
+              )}
             </TableToolbar>
             <Table {...getTableProps()}>
               <TableHead>
