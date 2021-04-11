@@ -25,6 +25,7 @@ import xmlrpc
 import koji
 from tortoise.transactions import atomic
 
+from distrobuild.common import tags
 from distrobuild.models import Build, BuildStatus, Package
 from distrobuild.session import koji_session, mbs_client
 from distrobuild.settings import settings
@@ -38,13 +39,18 @@ async def atomic_sign_unsigned_builds():
     builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).all()
     for build in builds:
         if build.koji_id:
+            koji_session.packageListAdd(tags.compose(), build.package.name, "distrobuild")
+
             build_tasks = koji_session.listBuilds(taskID=build.koji_id)
             for build_task in build_tasks:
+                koji_session.tagBuild(tags.compose(), build_task["nvr"])
+
                 build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
                 for rpm in build_rpms:
                     nvr_arch = "%s.%s" % (rpm["nvr"], rpm["arch"])
                     await sign_koji_package(nvr_arch)
                     koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
+
             build.signed = True
             await build.save()
 

@@ -24,6 +24,7 @@ from typing import List, Tuple
 
 from tortoise.transactions import atomic
 
+from distrobuild.common import tags
 from distrobuild.models import ImportStatus, Package, Import, ImportCommit
 from distrobuild.session import koji_session, gl
 from distrobuild.settings import settings
@@ -34,8 +35,7 @@ from distrobuild_scheduler.utils import gitlabify
 
 @atomic()
 async def do(package: Package, package_import: Import):
-    tag = f"dist-{settings.tag_prefix}{settings.version}"
-    koji_session.packageListAdd(tag, package.name, "distrobuild")
+    koji_session.packageListAdd(tags.base(), package.name, "distrobuild")
 
     branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module)
     for branch in branch_commits.keys():

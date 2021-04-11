@@ -29,6 +29,10 @@ def compose() -> str:
     return f"{base()}-compose"
 
 
+def module_compose() -> str:
+    return f"{base()}-module-compose"
+
+
 def testing() -> str:
     return f"{base()}-testing"
 

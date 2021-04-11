@@ -59,6 +59,7 @@ async def consume_messages(i: int):
 
 def schedule_periodic_tasks():
     asyncio.create_task(periodic_tasks.check_build_status())
+    asyncio.create_task(periodic_tasks.sign_unsigned_builds())
 
 
 async def main(loop):
