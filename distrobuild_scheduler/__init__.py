@@ -33,7 +33,11 @@ connection: Optional[aio_pika.RobustConnection] = None
 channel: Optional[aio_pika.Channel] = None
 logger = logging.getLogger("distrobuild_scheduler")
 logging.basicConfig()
-logger.setLevel(logging.INFO)
+
+if settings.debug:
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.INFO)
 
 
 async def init_channel(loop) -> None:

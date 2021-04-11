@@ -20,7 +20,7 @@
 
 from fastapi import APIRouter
 
-from distrobuild.routes import builds, imports, packages, bootstrap, oidc
+from distrobuild.routes import builds, imports, packages, bootstrap, oidc, batches, lookaside
 
 _base_router = APIRouter(prefix="/api")
 
@@ -31,5 +31,7 @@ def register_routes(app):
     _base_router.include_router(bootstrap.router)
     _base_router.include_router(builds.router)
     _base_router.include_router(imports.router)
+    _base_router.include_router(batches.router)
+    _base_router.include_router(lookaside.router)
 
     app.include_router(_base_router)

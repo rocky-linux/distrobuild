@@ -28,18 +28,20 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.sessions import SessionMiddleware
 from tortoise.contrib.fastapi import register_tortoise
 
+from distrobuild.middleware.redis_session import RedisSessionMiddleware
 from distrobuild.settings import TORTOISE_ORM, settings
 from distrobuild.routes import register_routes
+
 # init sessions
 from distrobuild import session
 
 from distrobuild_scheduler import init_channel
 
 app = FastAPI()
-app.add_middleware(SessionMiddleware, secret_key=settings.session_secret, max_age=3500)
+app.add_middleware(RedisSessionMiddleware, secret_key=settings.session_secret, max_age=3000, fapi=app,
+                   https_only=settings.production)
 app.mount("/static/files", StaticFiles(directory="ui/dist/files"), name="static")
 register_routes(app)
 

@@ -20,6 +20,7 @@
 
 import asyncio
 import datetime
+import xmlrpc
 
 import koji
 from tortoise.transactions import atomic
@@ -30,6 +31,22 @@ from distrobuild.settings import settings
 
 from distrobuild_scheduler import logger
 from distrobuild_scheduler.sigul import sign_koji_package
+
+
+@atomic()
+async def atomic_sign_unsigned_builds():
+    builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).all()
+    for build in builds:
+        if build.koji_id:
+            build_tasks = koji_session.listBuilds(taskID=build.koji_id)
+            for build_task in build_tasks:
+                build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
+                for rpm in build_rpms:
+                    nvr_arch = "%s.%s" % (rpm["nvr"], rpm["arch"])
+                    await sign_koji_package(nvr_arch)
+                    koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
+            build.signed = True
+            await build.save()
 
 
 @atomic()
@@ -45,16 +62,6 @@ async def atomic_check_build_status():
                 package = await Package.filter(id=build.package_id).get()
                 package.last_build = datetime.datetime.now()
                 await package.save()
-
-                # sign artifacts
-                if not settings.disable_sigul:
-                    build_tasks = koji_session.listBuilds(taskID=build.koji_id)
-                    for build_task in build_tasks:
-                        build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
-                        for rpm in build_rpms:
-                            nvr_arch = "%s.%s" % (rpm["nvr"], rpm["arch"])
-                            await sign_koji_package(nvr_arch)
-                            koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
             elif task_info["state"] == koji.TASK_STATES["CANCELED"]:
                 build.status = BuildStatus.CANCELLED
                 await build.save()
@@ -62,7 +69,7 @@ async def atomic_check_build_status():
                 try:
                     task_result = koji_session.getTaskResult(build.koji_id)
                     print(task_result)
-                except koji.BuildError:
+                except (koji.BuildError, xmlrpc.client.Fault):
                     build.status = BuildStatus.FAILED
                 except koji.GenericError:
                     build.status = BuildStatus.CANCELLED
@@ -91,3 +98,14 @@ async def check_build_status():
 
         # run every 5 minutes
         await asyncio.sleep(60 * 5)
+
+
+async def sign_unsigned_builds():
+    if not settings.disable_sigul:
+        while True:
+            logger.debug("[*] Running periodic task: sign_unsigned_builds")
+
+            await atomic_sign_unsigned_builds()
+
+            # run every 5 minutes
+            await asyncio.sleep(60 * 5)

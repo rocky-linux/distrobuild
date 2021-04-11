@@ -49,8 +49,9 @@ import {
 } from 'carbon-components-react';
 
 import { Axios, IPackage, IPaginated } from '../api';
-import { IPageChangeEvent } from '../misc';
-import { CloudUpload16, Development16} from '@carbon/icons-react';
+import { changeQueryParam, getQueryParam, PageChangeEvent } from '../misc';
+import { CloudUpload16, Development16 } from '@carbon/icons-react';
+import { Link } from 'react-router-dom';
 
 export const Packages = () => {
   const [showImportModal, setShowImportModal] = React.useState(false);
@@ -59,15 +60,23 @@ export const Packages = () => {
   const [disable, setDisable] = React.useState(false);
   const [rows, setRows] = React.useState([]);
 
-  const [page, setPage] = React.useState(0);
-  const [size, setSize] = React.useState(25);
-  const [nameFilter, setNameFilter] = React.useState(null);
+  const [page, setPage] = React.useState(Number(getQueryParam('page') || 1));
+  const [size, setSize] = React.useState(
+    Math.min(100, Number(getQueryParam('size') || 25))
+  );
+  const [nameFilter, setNameFilter] = React.useState(getQueryParam('search'));
   const [modulesOnlyFilter, setModulesOnlyFilter] = React.useState(false);
   const [nonModulesOnlyFilter, setNonModulesOnlyFilter] = React.useState(false);
   const [
     excludeModularCandidatesFilter,
     setExcludeModularCandidatesFilter,
-  ] = React.useState(false);
+  ] = React.useState(true);
+  const [noBuildsOnlyFilter, setNoBuildsOnlyFilter] = React.useState(false);
+  const [withBuildsOnlyFilter, setWithBuildsOnlyFilter] = React.useState(false);
+  const [noImportsOnlyFilter, setNoImportsOnlyFilter] = React.useState(false);
+  const [withImportsOnlyFilter, setWithImportsOnlyFilter] = React.useState(
+    false
+  );
   const [searchTimeout, setSearchTimeout] = React.useState<NodeJS.Timeout>(
     null
   );
@@ -80,12 +89,16 @@ export const Packages = () => {
       const [, res] = await to(
         Axios.get('/packages/', {
           params: {
-            page,
+            page: page - 1,
             size,
             name: nameFilter,
             modules_only: modulesOnlyFilter,
             non_modules_only: nonModulesOnlyFilter,
             exclude_modular_candidates: excludeModularCandidatesFilter,
+            no_builds_only: noBuildsOnlyFilter,
+            with_builds_only: withBuildsOnlyFilter,
+            no_imports_only: noImportsOnlyFilter,
+            with_imports_only: withImportsOnlyFilter,
           },
         })
       );
@@ -104,6 +117,10 @@ export const Packages = () => {
     modulesOnlyFilter,
     nonModulesOnlyFilter,
     excludeModularCandidatesFilter,
+    noBuildsOnlyFilter,
+    withBuildsOnlyFilter,
+    noImportsOnlyFilter,
+    withImportsOnlyFilter,
   ]);
 
   const headers = [
@@ -114,21 +131,31 @@ export const Packages = () => {
     { header: 'Responsible user', key: 'responsible_username' },
   ];
 
-  const onPageChange = (e: IPageChangeEvent) => {
+  const onPageChange = (e: PageChangeEvent) => {
     setPage(e.page);
     setSize(e.pageSize);
     window.scrollTo(0, 0);
+    changeQueryParam('page', e.page.toString());
+    changeQueryParam('size', e.pageSize.toString());
+  };
+
+  const doNameSearch = (val: string | null) => {
+    setNameFilter(val);
+    setPage(0);
+    changeQueryParam('search', val);
   };
 
   const nameSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e || !e.currentTarget) {
+      return;
+    }
+
     clearTimeout(searchTimeout);
 
     if (!e.currentTarget.value || e.currentTarget.value.trim().length === 0) {
-      setNameFilter(null);
       setSearchTimeout(
         setTimeout(() => {
-          setNameFilter(null);
-          setPage(0);
+          doNameSearch(null);
         }, 200)
       );
       return;
@@ -137,8 +164,7 @@ export const Packages = () => {
     const val = e.currentTarget.value;
     setSearchTimeout(
       setTimeout(() => {
-        setNameFilter(val);
-        setPage(0);
+        doNameSearch(val);
       }, 200)
     );
   };
@@ -159,6 +185,34 @@ export const Packages = () => {
 
   const toggleExcludeModularesCandidates = () => {
     setExcludeModularCandidatesFilter(!excludeModularCandidatesFilter);
+  };
+
+  const toggleNoBuildsOnly = () => {
+    setNoBuildsOnlyFilter(!noBuildsOnlyFilter);
+    if (withBuildsOnlyFilter) {
+      setWithBuildsOnlyFilter(false);
+    }
+  };
+
+  const toggleWithBuildsOnly = () => {
+    setWithBuildsOnlyFilter(!withBuildsOnlyFilter);
+    if (noBuildsOnlyFilter) {
+      setNoBuildsOnlyFilter(false);
+    }
+  };
+
+  const toggleNoImportsOnly = () => {
+    setNoImportsOnlyFilter(!noImportsOnlyFilter);
+    if (withImportsOnlyFilter) {
+      setWithImportsOnlyFilter(false);
+    }
+  };
+
+  const toggleWithImportsOnly = () => {
+    setWithImportsOnlyFilter(!withImportsOnlyFilter);
+    if (noImportsOnlyFilter) {
+      setNoImportsOnlyFilter(false);
+    }
   };
 
   const rowsToIds = (rows) =>
@@ -189,8 +243,10 @@ export const Packages = () => {
 
     (async () => {
       const ids = rowsToIds(rows);
-      const [err, ] = await to(
-        Axios.post(`${imports ? '/imports' : '/builds'}/batch`, ids)
+      ids.should_precheck = false;
+
+      const [err] = await to(
+        Axios.post(`/batches/${imports ? 'imports' : 'builds'}/`, ids)
       );
       if (err) {
         alert('API Error');
@@ -279,8 +335,37 @@ export const Packages = () => {
                   defaultExpanded
                   expanded
                   onChange={nameSearch}
+                  defaultValue={nameFilter}
                 />
                 <TableToolbarMenu>
+                  <TableToolbarAction onClick={toggleNoBuildsOnly}>
+                    <Checkbox
+                      id="no_builds_only"
+                      labelText="No builds only"
+                      checked={noBuildsOnlyFilter}
+                    />
+                  </TableToolbarAction>
+                  <TableToolbarAction onClick={toggleWithBuildsOnly}>
+                    <Checkbox
+                      id="with_builds_only"
+                      labelText="With builds only"
+                      checked={withBuildsOnlyFilter}
+                    />
+                  </TableToolbarAction>
+                  <TableToolbarAction onClick={toggleNoImportsOnly}>
+                    <Checkbox
+                      id="no_imports_only"
+                      labelText="No imports only"
+                      checked={noImportsOnlyFilter}
+                    />
+                  </TableToolbarAction>
+                  <TableToolbarAction onClick={toggleWithImportsOnly}>
+                    <Checkbox
+                      id="with_imports_only"
+                      labelText="With imports only"
+                      checked={withImportsOnlyFilter}
+                    />
+                  </TableToolbarAction>
                   <TableToolbarAction onClick={toggleModulesOnly}>
                     <Checkbox
                       id="modules_only"
@@ -347,64 +432,58 @@ export const Packages = () => {
                       )}
                       {row.cells.map((cell) => (
                         <>
-                          {[
-                            'tags',
-                            'last_import',
-                            'last_build',
-                            'responsible_username',
-                          ].includes(cell.info.header) ? (
-                            <>
-                              {pkg && cell.info.header === 'tags' && (
-                                <TableCell key={`${cell.id}-tags`}>
-                                  {pkg.el8 && <Tag type="blue">EL8</Tag>}
-                                  {pkg.is_module && (
-                                    <Tag type="green">Module</Tag>
-                                  )}
-                                  {pkg.is_package && (
-                                    <Tag type="cool-gray">Package</Tag>
-                                  )}
-                                  {pkg.part_of_module && (
-                                    <Tag type="cyan">Part of module</Tag>
-                                  )}
-                                  {pkg.repo === 'MODULAR_CANDIDATE' && (
-                                    <Tag type="warm-gray">
-                                      Modular candidate
-                                    </Tag>
-                                  )}
-                                </TableCell>
+                          {pkg && cell.info.header === 'name' && (
+                            <TableCell key={cell.value}>
+                              {pkg.repo !== 'MODULAR_CANDIDATE' ? (
+                                <Link to={`/packages/${pkg.id}`}>
+                                  {cell.value}
+                                </Link>
+                              ) : (
+                                cell.value
                               )}
-                              {cell.info.header === 'responsible_username' && (
-                                <TableCell key={cell.value}>
-                                  <a
-                                    target="_blank"
-                                    href={`${window.SETTINGS.gitlabUrl}/${cell.value}`}
-                                  >
-                                    {cell.value}
-                                  </a>
-                                </TableCell>
-                              )}
-                              {['last_import', 'last_build'].includes(
-                                cell.info.header
-                              ) &&
-                                (pkg.is_module ||
-                                pkg.is_package ||
-                                pkg.part_of_module ? (
-                                  <TableCell
-                                    key={`${cell.id}-dist-${cell.value}`}
-                                  >
-                                    <Tag type={cell.value ? 'green' : 'red'}>
-                                      {cell.value
-                                        ? new Date(cell.value).toLocaleString()
-                                        : 'Never'}
-                                    </Tag>
-                                  </TableCell>
-                                ) : (
-                                  <TableCell />
-                                ))}
-                            </>
-                          ) : (
-                            <TableCell key={cell.value}>{cell.value}</TableCell>
+                            </TableCell>
                           )}
+                          {pkg && cell.info.header === 'tags' && (
+                            <TableCell key={`${cell.id}-tags`}>
+                              {pkg.el8 && <Tag type="blue">EL8</Tag>}
+                              {pkg.is_module && <Tag type="green">Module</Tag>}
+                              {pkg.is_package && (
+                                <Tag type="cool-gray">Package</Tag>
+                              )}
+                              {pkg.part_of_module && (
+                                <Tag type="cyan">Part of module</Tag>
+                              )}
+                              {pkg.repo === 'MODULAR_CANDIDATE' && (
+                                <Tag type="warm-gray">Modular candidate</Tag>
+                              )}
+                            </TableCell>
+                          )}
+                          {cell.info.header === 'responsible_username' && (
+                            <TableCell key={cell.value}>
+                              <a
+                                target="_blank"
+                                href={`${window.SETTINGS.gitlabUrl}/${cell.value}`}
+                              >
+                                {cell.value}
+                              </a>
+                            </TableCell>
+                          )}
+                          {['last_import', 'last_build'].includes(
+                            cell.info.header
+                          ) &&
+                            (pkg.is_module ||
+                            pkg.is_package ||
+                            pkg.part_of_module ? (
+                              <TableCell key={`${cell.id}-dist-${cell.value}`}>
+                                <Tag type={cell.value ? 'green' : 'red'}>
+                                  {cell.value
+                                    ? new Date(cell.value).toLocaleString()
+                                    : 'Never'}
+                                </Tag>
+                              </TableCell>
+                            ) : (
+                              <TableCell />
+                            ))}
                         </>
                       ))}
                     </TableRow>
@@ -413,6 +492,8 @@ export const Packages = () => {
               </TableBody>
             </Table>
             <Pagination
+              page={page}
+              pageSize={size}
               totalItems={packageRes.total}
               pageSizes={[25, 50, 100]}
               onChange={onPageChange}

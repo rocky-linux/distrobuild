@@ -18,11 +18,11 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from fastapi import Request, HTTPException
 
-from distrobuild.models import Import, ImportStatus, Package, PackageModule
+from distrobuild.models import Import, ImportStatus, Package, PackageModule, BatchImportPackage
 from distrobuild.settings import settings
 
 
@@ -33,12 +33,15 @@ def gen_body_filters(body: dict) -> dict:
         return {"id": body["package_id"]}
 
 
-async def create_import_order(package: Package, username: str) -> List[Tuple[int, int]]:
+async def create_import_order(package: Package, username: str, batch_import_id: Optional[int] = None) -> List[
+    Tuple[int, int]]:
     pkg_list = []
 
     if package.is_package:
         package_import = await Import.create(package_id=package.id, status=ImportStatus.QUEUED,
                                              executor_username=username, version=settings.version)
+        if batch_import_id:
+            await BatchImportPackage.create(import_id=package_import.id, batch_import_id=batch_import_id)
         pkg_list.append((package.id, package_import.id))
 
     if package.is_module:
@@ -47,13 +50,33 @@ async def create_import_order(package: Package, username: str) -> List[Tuple[int
             imports = await Import.filter(package_id=subpackage.package_id).all()
             if not imports or len(imports) == 0:
                 subpackage_package = await Package.filter(id=subpackage.package_id).get()
-                pkg_list += await create_import_order(subpackage_package, username)
+                pkg_list += await create_import_order(subpackage_package, username, batch_import_id)
 
         package_module_import = await Import.create(package_id=package.id, status=ImportStatus.QUEUED,
                                                     module=True, executor_username=username, version=settings.version)
+        if batch_import_id:
+            await BatchImportPackage.create(import_id=package_module_import.id, batch_import_id=batch_import_id)
         pkg_list.append((package.id, package_module_import.id))
 
     return pkg_list
+
+
+async def batch_list_check(packages):
+    for package in packages:
+        filters = {}
+        if package.get("package_id"):
+            filters["id"] = package["package_id"]
+        elif package.get("package_name"):
+            filters["name"] = package["package_name"]
+
+        db_package = await Package.filter(**filters).first()
+        if not db_package:
+            detail = ""
+            if package.get("package_id"):
+                detail = f"Package with id {package['package_id']} not found"
+            elif package.get("package_name"):
+                detail = f"Package with name {package['package_name']} not found"
+            raise HTTPException(412, detail=detail)
 
 
 def get_user(request: Request) -> dict:

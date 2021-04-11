@@ -68,6 +68,8 @@ async def process_module_dump(responsible_username: str) -> None:
 
         subpackages = [x.strip() for x in module_list[module].split(",")]
         for module_package in subpackages:
+            if len(module_package.strip()) == 0:
+                continue
             m_package_name = module_package.strip()
             m_package = await Package.filter(name=m_package_name).get_or_none()
 

@@ -27,9 +27,13 @@ class Settings(BaseSettings):
     gitlab_api_key: str
     session_secret: str
     message_secret: str
+    cookie_secret: str
     tag_prefix: str = "rocky"
     active_point_releases: List[str] = ["3", "4"]
-    default_point_release: str = "4"
+    default_point_release: str = "3"
+    redis_url: str = "redis://localhost"
+    production: bool = False
+    debug: bool = False
 
     # srpmproc
     gitlab_host: str

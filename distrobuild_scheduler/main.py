@@ -69,7 +69,7 @@ async def main(loop):
         if not settings.disable_sigul:
             await check_sigul_key()
 
-        # schedule_periodic_tasks()
+        schedule_periodic_tasks()
 
         tasks = [consume_messages(i) for i in range(0, settings.workers)]
         await asyncio.wait(tasks)

@@ -23,6 +23,15 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from distrobuild import models
 
 Package_Pydantic = pydantic_model_creator(models.Package, name="Package")
+PackageGeneral_Pydantic = pydantic_model_creator(models.Package, name="PackageGeneral", exclude=("imports", "builds"))
 PackageModule_Pydantic = pydantic_model_creator(models.PackageModule, name="PackageModule")
 Build_Pydantic = pydantic_model_creator(models.Build, name="Build", exclude=("import_commit.import_",))
-Import_Pydantic = pydantic_model_creator(models.Import, name="Import")
+BuildGeneral_Pydantic = pydantic_model_creator(models.Build, name="BuildGeneral",
+                                               exclude=("import_commit.import_", "package.imports", "package.builds"))
+Import_Pydantic = pydantic_model_creator(models.Import, name="Import", exclude=("commits.builds",))
+ImportGeneral_Pydantic = pydantic_model_creator(models.Import, name="ImportGeneral",
+                                                exclude=("package.imports", "package.builds"))
+BatchImport_Pydantic = pydantic_model_creator(models.BatchImport, name="BatchImport",
+                                              exclude=("imports.package.imports", "imports.package.builds"))
+BatchBuild_Pydantic = pydantic_model_creator(models.BatchBuild, name="BatchBuild",
+                                             exclude=("builds.package.imports", "builds.package.builds"))

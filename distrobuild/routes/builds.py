@@ -18,7 +18,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi_pagination import Page, pagination_params
@@ -26,9 +26,10 @@ from fastapi_pagination.ext.tortoise import paginate
 from pydantic import BaseModel, validator
 
 from distrobuild.common import gen_body_filters, get_user, tags
-from distrobuild.models import Build, Import, ImportCommit, Package, PackageModule, BuildStatus, Repo
-from distrobuild.serialize import Build_Pydantic
+from distrobuild.models import Build, Import, ImportCommit, Package, PackageModule, BuildStatus, Repo, BatchBuildPackage
+from distrobuild.serialize import Build_Pydantic, BuildGeneral_Pydantic
 from distrobuild.session import message_cipher
+from distrobuild.settings import settings
 from distrobuild_scheduler import build_package_task
 
 router = APIRouter(prefix="/builds")
@@ -37,6 +38,7 @@ router = APIRouter(prefix="/builds")
 class BuildRequest(BaseModel):
     scratch: bool = False
     testing: bool = False
+    ignore_modules: bool = False
     package_id: Optional[int]
     package_name: Optional[str]
 
@@ -47,11 +49,7 @@ class BuildRequest(BaseModel):
         return package_name
 
 
-class BatchBuildRequest(BaseModel):
-    packages: List[BuildRequest]
-
-
-@router.get("/", response_model=Page[Build_Pydantic], dependencies=[Depends(pagination_params)])
+@router.get("/", response_model=Page[BuildGeneral_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_builds():
     return await paginate(Build.all().order_by("-created_at").prefetch_related("package", "import_commit"))
 
@@ -63,8 +61,20 @@ async def get_build(build_id: int):
     )
 
 
+@router.post("/{build_id}/cancel", status_code=202)
+async def cancel_build(build_id: int):
+    build_obj = await Build.filter(id=build_id, cancelled=False).get_or_none()
+    if not build_obj:
+        raise HTTPException(404, detail="build does not exist or is already cancelled")
+
+    build_obj.status = BuildStatus.CANCELLED
+    await build_obj.save()
+
+    return {}
+
+
 @router.post("/", status_code=202)
-async def queue_build(request: Request, body: Dict[str, BuildRequest]):
+async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_build_id: Optional[int] = None):
     user = get_user(request)
 
     filters = gen_body_filters(body)
@@ -73,18 +83,12 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest]):
         raise HTTPException(404, detail="package does not exist")
 
     if package.repo == Repo.MODULAR_CANDIDATE:
-        raise HTTPException(401, detail="modular subpackages cannot be built, build the main module")
+        raise HTTPException(400, detail="modular subpackages cannot be built, build the main module")
 
-    if package.part_of_module and not package.is_module:
-        raise HTTPException(401, detail="this package is part of a module. build the main module")
-
-    extras = {
-        "mbs": package.is_module
-    }
+    extras = {}
     token = None
     package_modules = await PackageModule.filter(package_id=package.id)
     if len(package_modules) > 0 or package.is_module:
-        extras["mbs"] = True
         token = message_cipher.encrypt(request.session.get("token").encode()).decode()
 
     if body.get("testing") and not body.get("scratch"):
@@ -97,17 +101,19 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest]):
     import_commits = await ImportCommit.filter(import__id=latest_import.id).all()
     for import_commit in import_commits:
         if "-beta" not in import_commit.branch:
+            if "-stream" in import_commit.branch:
+                if body.get("ignore_modules"):
+                    continue
+                if package.part_of_module and not package.is_module:
+                    continue
+                extras["mbs"] = True
+
             build = await Build.create(package_id=package.id, status=BuildStatus.QUEUED,
-                                       executor_username=user["preferred_username"], point_release="8_3",
+                                       executor_username=user["preferred_username"],
+                                       point_release=f"{settings.version}_{settings.default_point_release}",
                                        import_commit_id=import_commit.id, **extras)
+            if batch_build_id:
+                await BatchBuildPackage.create(build_id=build.id, batch_build_id=batch_build_id)
             await build_package_task(package.id, build.id, token)
-
-    return {}
-
-
-@router.post("/batch", status_code=202)
-async def batch_queue_build(request: Request, body: BatchBuildRequest):
-    for build_request in body.packages:
-        await queue_build(request, dict(build_request))
 
     return {}

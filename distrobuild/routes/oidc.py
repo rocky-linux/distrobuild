@@ -33,6 +33,12 @@ async def start_flow(request: Request):
     return await oidc.authorize_redirect(request, redirect_uri)
 
 
+@router.get("/logout")
+async def start_flow(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/")
+
+
 @router.get("/callback")
 async def callback(request: Request):
     token = await oidc.authorize_access_token(request)

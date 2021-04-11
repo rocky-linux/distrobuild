@@ -23,6 +23,7 @@ import koji
 from cryptography.fernet import Fernet
 from koji_cli.lib import activate_session
 
+from distrobuild.lookaside import Lookaside
 from distrobuild.mbs import MBSClient
 from distrobuild.settings import settings
 
@@ -33,3 +34,5 @@ koji_session = koji.ClientSession(koji_config["server"], koji_config)
 activate_session(koji_session, koji_config)
 mbs_client = MBSClient(settings.mbs_url)
 message_cipher = Fernet(settings.message_secret)
+cookie_cipher = Fernet(settings.cookie_secret)
+lookaside_session = Lookaside(settings.storage_addr)

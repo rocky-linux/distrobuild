@@ -27,3 +27,7 @@
 .bx--header__nav.right::before {
   display: none;
 }
+
+.bx--pagination {
+  overflow: hidden !important;
+}

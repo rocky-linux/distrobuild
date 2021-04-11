@@ -22,25 +22,28 @@
 
 const path = require('path');
 
-const { ESBuildPlugin } = require('esbuild-loader');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+const webpack = require('webpack');
 
-const dev = process.env.NODE_ENV === 'production';
+const prod = process.env.NODE_ENV === 'production';
+const dev = !prod;
 
 module.exports = {
+  mode: dev ? 'development' : 'production',
+  devtool: dev ? 'eval-cheap-module-source-map' : undefined,
   entry: path.resolve(__dirname, 'src/entrypoint.tsx'),
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: `files/distrobuild.[contenthash].js`,
     chunkFilename: `files/distrobuild.[id].chunk.[chunkhash].js`,
-    publicPath: '/static/',
+    publicPath: dev ? 'http://localhost:8080/static/' : '/static/',
   },
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.css'],
   },
   plugins: [
-    new ESBuildPlugin(),
     new CleanWebpackPlugin({
       dry: dev,
     }),
@@ -48,28 +51,34 @@ module.exports = {
       filename: 'templates/index.html',
       template: path.resolve(__dirname, 'public/index.html'),
     }),
-  ],
+    dev && new webpack.HotModuleReplacementPlugin(),
+    dev && new ReactRefreshWebpackPlugin(),
+  ].filter(Boolean),
+  devServer: {
+    hot: true,
+    liveReload: false,
+    historyApiFallback: {
+      index: '/',
+    },
+    writeToDisk: true,
+    allowedHosts: ['http://localhost:8090'],
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers':
+        'X-Requested-With, content-type, Authorization',
+    },
+  },
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
-        loader: 'esbuild-loader',
-        options: {
-          loader: 'tsx',
-          target: 'es2015',
-          tsconfigRaw: require('./tsconfig.json'),
-        },
-      },
-      {
-        test: /\.js?$/,
-        loader: 'esbuild-loader',
-        options: {
-          target: 'es2015',
-        },
+        test: /\.(js|ts)x?$/,
+        loader: 'babel-loader',
+        exclude: [/node_modules/],
       },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
+        use: ['style-loader', 'css-loader', 'postcss-loader'],
       },
     ],
   },

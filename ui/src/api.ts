@@ -40,16 +40,21 @@ export interface IPackage {
   el8: boolean;
   is_module: boolean;
   is_package: boolean;
+  is_published: boolean;
+  signed: boolean;
   part_of_module: boolean;
   last_import: string;
   repo: string;
+  builds: IBuild[];
+  imports: IImport[];
 }
 
 export interface IImport {
   id: string;
   created_at: string;
   status: string;
-  commit: string;
+  module: boolean;
+  commits: Commit[];
   package: IPackage;
 }
 
@@ -61,4 +66,23 @@ export interface IBuild {
   branch: string;
   commit: string;
   package: IPackage;
+}
+
+export interface IBatchBuild {
+  id: string;
+  created_at: string;
+  builds: IBuild[];
+}
+
+export interface IBatchImport {
+  id: string;
+  created_at: string;
+  imports: IImport[];
+}
+
+export interface Commit {
+  id: number;
+  commit: string;
+  branch: string;
+  import__id: number;
 }

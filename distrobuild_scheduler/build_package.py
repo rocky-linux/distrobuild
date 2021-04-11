@@ -65,12 +65,17 @@ async def do(package: Package, build: Build, token: Optional[str]):
 # noinspection DuplicatedCode
 async def task(package_id: int, build_id: int, token: Optional[str]):
     build = await Build.filter(id=build_id).prefetch_related("import_commit").get()
+
+    if build.status == BuildStatus.CANCELLED:
+        return
+
     package = await Package.filter(id=package_id).get()
     try:
         await do(package, build, token)
     except Exception as e:
         print(e)
         build.status = BuildStatus.FAILED
+        package.last_build = None
     finally:
         await build.save()
         await package.save()

@@ -34,12 +34,8 @@ from distrobuild_scheduler.utils import gitlabify
 
 @atomic()
 async def do(package: Package, package_import: Import):
-    package_import.status = ImportStatus.IN_PROGRESS
-    await package_import.save()
-
-    if not package.is_module and not package.part_of_module:
-        tag = f"dist-{settings.tag_prefix}{settings.version}"
-        koji_session.packageListAdd(tag, package.name, "distrobuild")
+    tag = f"dist-{settings.tag_prefix}{settings.version}"
+    koji_session.packageListAdd(tag, package.name, "distrobuild")
 
     branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module)
     for branch in branch_commits.keys():
@@ -58,16 +54,22 @@ async def do(package: Package, package_import: Import):
 async def task(package_id: int, import_id: int, dependents: List[Tuple[int, int]]):
     package = await Package.filter(id=package_id).get()
     package_import = await Import.filter(id=import_id).get()
-    try:
-        await do(package, package_import)
-    except Exception as e:
-        print(e)
-        package_import.status = ImportStatus.FAILED
-    else:
-        package_import.status = ImportStatus.SUCCEEDED
-    finally:
-        await package_import.save()
-        await package.save()
+
+    if package_import.status != ImportStatus.CANCELLED:
+        try:
+            package_import.status = ImportStatus.IN_PROGRESS
+            await package_import.save()
+
+            await do(package, package_import)
+        except Exception as e:
+            print(e)
+            package_import.status = ImportStatus.FAILED
+            package.last_import = None
+        else:
+            package_import.status = ImportStatus.SUCCEEDED
+        finally:
+            await package_import.save()
+            await package.save()
 
     if len(dependents) > 0:
         await task(dependents[0][0], dependents[0][1], dependents[1:])

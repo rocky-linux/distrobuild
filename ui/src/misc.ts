@@ -20,7 +20,23 @@
  * SOFTWARE.
  */
 
-export interface IPageChangeEvent {
+export interface PageChangeEvent {
   page: number;
   pageSize: number;
 }
+
+export interface RouterParams {
+  id: string;
+}
+
+export const changeQueryParam = (key: string, value: string) => {
+  const url = new URL(window.location.toString());
+  url.searchParams.set(key, value);
+  window.history.pushState({}, '', url.toString());
+};
+
+export const getQueryParam = (key: string): string | null => {
+  const url = new URL(window.location.toString());
+
+  return url.searchParams.get(key);
+};

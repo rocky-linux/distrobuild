@@ -26,41 +26,50 @@ class Import(Model):
     id = fields.BigIntField(pk=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_add=True, null=True)
-    package = fields.ForeignKeyField("distrobuild.Package", on_delete="RESTRICT")
+    package = fields.ForeignKeyField("distrobuild.Package", on_delete="RESTRICT", related_name="imports")
     status = fields.CharEnumField(ImportStatus)
     module = fields.BooleanField(default=False)
     version = fields.IntField()
     executor_username = fields.CharField(max_length=255)
 
-    commits: fields.ReverseRelation["ImportCommit"] = fields.ReverseRelation
+    commits: fields.ManyToManyRelation["ImportCommit"] = fields.ManyToManyField("distrobuild.ImportCommit",
+                                                                                related_name="imports",
+                                                                                forward_key="id",
+                                                                                backward_key="import__id",
+                                                                                through="import_commits")
 
     class Meta:
         table = "imports"
+        ordering = ["-created_at"]
 
     class PydanticMeta:
-        backward_relations = False
+        exclude = ("batch_imports",)
 
 
 class ImportCommit(Model):
     id = fields.BigIntField(pk=True)
     commit = fields.CharField(max_length=255)
     branch = fields.CharField(max_length=255)
-    import_ = fields.ForeignKeyField("distrobuild.Import", on_delete="RESTRICT")
+    import__id = fields.BigIntField()
 
     class Meta:
         table = "import_commits"
+
+    class PydanticMeta:
+        exclude = ("import_", "imports", "builds")
 
 
 class Build(Model):
     id = fields.BigIntField(pk=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_add=True, null=True)
-    package = fields.ForeignKeyField("distrobuild.Package", on_delete="RESTRICT")
+    package = fields.ForeignKeyField("distrobuild.Package", on_delete="RESTRICT", related_name="builds")
     status = fields.CharEnumField(BuildStatus)
     mbs = fields.BooleanField(default=False)
+    signed = fields.BooleanField(default=False)
     koji_id = fields.BigIntField(null=True)
     mbs_id = fields.BigIntField(null=True)
-    import_commit = fields.ForeignKeyField("distrobuild.ImportCommit", on_delete="RESTRICT")
+    import_commit = fields.ForeignKeyField("distrobuild.ImportCommit", on_delete="RESTRICT", related_name="builds")
     executor_username = fields.CharField(max_length=255)
     force_tag = fields.CharField(max_length=255, null=True)
     exclude_compose = fields.BooleanField(default=False)
@@ -68,6 +77,10 @@ class Build(Model):
 
     class Meta:
         table = "builds"
+        ordering = ["-created_at"]
+
+    class PydanticMeta:
+        exclude = ("batch_builds",)
 
 
 class Logs(Model):

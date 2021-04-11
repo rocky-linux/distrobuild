@@ -25,11 +25,15 @@ import httpx
 from distrobuild.settings import settings
 
 
-class MBSConflictException(BaseException):
+class MBSConflictException(Exception):
     pass
 
 
-class MBSBuildNotFound(BaseException):
+class MBSUnauthorizedException(Exception):
+    pass
+
+
+class MBSBuildNotFound(Exception):
     pass
 
 
@@ -49,7 +53,6 @@ class MBSClient:
 
     async def build(self, token: str, name: str, branch: str, commit: str) -> int:
         scmurl = f"https://{settings.gitlab_host}{settings.repo_prefix}/modules/{name}?#{commit}"
-        print(scmurl)
 
         client = httpx.AsyncClient()
         async with client:
@@ -67,6 +70,8 @@ class MBSClient:
             if r.status_code == 409:
                 raise MBSConflictException()
 
+            if r.status_code == 401:
+                raise MBSUnauthorizedException()
+
             data = r.json()
-            print(data)
             return data["id"]

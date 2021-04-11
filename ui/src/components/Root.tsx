@@ -32,8 +32,17 @@ import 'carbon-components/css/carbon-components.min.css';
 import { BrowserRouter, Link, Route, Switch } from 'react-router-dom';
 import { Packages } from './Packages';
 import { Dashboard } from './Dashboard';
+import { BuildBatches } from './BuildBatches';
+import { ImportBatches } from './ImportBatches';
+import { ShowPackage } from './ShowPackage';
 
 import '../styles/header.css';
+import '../styles/tailwind.css';
+import { Lookaside } from './Lookaside';
+import { BuildBatchShow } from './BuildBatchShow';
+import { ImportBatchShow } from './ImportBatchShow';
+import { BuildsList } from './BuildsList';
+import { ImportsList } from './ImportsList';
 
 export const Root = () => {
   return (
@@ -46,23 +55,49 @@ export const Root = () => {
           <HeaderMenuItem element={Link} to="/packages">
             Packages
           </HeaderMenuItem>
+          <HeaderMenuItem element={Link} to="/builds">
+            Builds
+          </HeaderMenuItem>
+          <HeaderMenuItem element={Link} to="/imports">
+            Imports
+          </HeaderMenuItem>
+          <HeaderMenuItem element={Link} to="/batches/builds">
+            Build batches
+          </HeaderMenuItem>
+          <HeaderMenuItem element={Link} to="/batches/imports">
+            Import batches
+          </HeaderMenuItem>
+          {window.STATE.authenticated && (
+            <HeaderMenuItem element={Link} to="/lookaside">
+              Lookaside
+            </HeaderMenuItem>
+          )}
         </HeaderNavigation>
         <HeaderNavigation className="right">
           <HeaderMenuItem
-            element={window.STATE.authenticated ? Link : undefined}
             href={
               window.STATE.authenticated ? undefined : '/api/oidc/start_flow'
             }
-            to={window.STATE.authenticated ? '/profile' : undefined}
           >
             {window.STATE.fullName || 'Login'}
           </HeaderMenuItem>
+          {window.STATE.authenticated && (
+            <HeaderMenuItem href="/api/oidc/logout">Logout</HeaderMenuItem>
+          )}
         </HeaderNavigation>
       </Header>
       <div style={{ marginTop: '48px' }}>
         <Switch>
           <Route exact path="/" component={Dashboard} />
+          <Route path="/packages/:id" component={ShowPackage} />
           <Route path="/packages" component={Packages} />
+          <Route path="/builds" component={BuildsList} />
+          <Route path="/imports" component={ImportsList} />
+          <Route path="/batches/builds/:id" component={BuildBatchShow} />
+          <Route path="/batches/builds" component={BuildBatches} />
+          <Route path="/batches/imports/:id" component={ImportBatchShow} />
+          <Route path="/batches/imports" component={ImportBatches} />
+          <Route path="/lookaside" component={Lookaside} />
         </Switch>
       </div>
     </BrowserRouter>

@@ -18,7 +18,7 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi_pagination import pagination_params, Page
@@ -27,8 +27,8 @@ from pydantic import BaseModel, validator
 from starlette.responses import PlainTextResponse
 
 from distrobuild.common import gen_body_filters, create_import_order, get_user
-from distrobuild.models import Import, Package, Repo
-from distrobuild.serialize import Import_Pydantic
+from distrobuild.models import Import, Package, Repo, ImportStatus
+from distrobuild.serialize import Import_Pydantic, ImportGeneral_Pydantic
 from distrobuild_scheduler import import_package_task
 
 router = APIRouter(prefix="/imports")
@@ -47,13 +47,9 @@ class ImportRequest(BaseModel):
         return package_name
 
 
-class BatchImportRequest(BaseModel):
-    packages: List[ImportRequest]
-
-
-@router.get("/", response_model=Page[Import_Pydantic], dependencies=[Depends(pagination_params)])
+@router.get("/", response_model=Page[ImportGeneral_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_imports():
-    return await paginate(Import.all().order_by("-created_at").prefetch_related("package"))
+    return await paginate(Import.all().order_by("-created_at").prefetch_related("package", "commits"))
 
 
 @router.get("/{import_id}", response_model=Import_Pydantic)
@@ -73,8 +69,20 @@ async def get_import_logs(import_id: int):
         raise HTTPException(412, detail="import not started or log has expired")
 
 
+@router.post("/{import_id}/cancel", status_code=202)
+async def cancel_import(import_id: int):
+    import_obj = await Import.filter(id=import_id, cancelled=False).get_or_none()
+    if not import_obj:
+        raise HTTPException(404, detail="import does not exist or is already cancelled")
+
+    import_obj.status = ImportStatus.CANCELLED
+    await import_obj.save()
+
+    return {}
+
+
 @router.post("/", status_code=202)
-async def import_package_route(request: Request, body: Dict[str, ImportRequest]):
+async def import_package_route(request: Request, body: Dict[str, ImportRequest], batch_import_id: Optional[int] = None):
     user = get_user(request)
 
     filters = gen_body_filters(body)
@@ -85,15 +93,7 @@ async def import_package_route(request: Request, body: Dict[str, ImportRequest])
     if package.repo == Repo.MODULAR_CANDIDATE:
         raise HTTPException(401, detail="modular subpackages cannot be imported")
 
-    build_order = await create_import_order(package, user["preferred_username"])
+    build_order = await create_import_order(package, user["preferred_username"], batch_import_id)
     await import_package_task(build_order[0][0], build_order[0][1], build_order[1:])
-
-    return {}
-
-
-@router.post("/batch", status_code=202)
-async def batch_import_package(request: Request, body: BatchImportRequest):
-    for build_request in body.packages:
-        await import_package_route(request, dict(build_request))
 
     return {}
