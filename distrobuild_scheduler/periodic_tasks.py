@@ -41,9 +41,17 @@ async def atomic_sign_unsigned_builds():
         if build.koji_id:
             koji_session.packageListAdd(tags.compose(), build.package.name, "distrobuild")
 
+            should_tag = True
             build_tasks = koji_session.listBuilds(taskID=build.koji_id)
             for build_task in build_tasks:
-                koji_session.tagBuild(tags.compose(), build_task["nvr"])
+                build_history = koji_session.queryHistory(build=build_task["build_id"])
+                if "tag_listing" in build_history:
+                    for tag in build_history["tag_listing"]:
+                        if tag["tag.name"] == tags.compose():
+                            should_tag = False
+
+                if should_tag:
+                    koji_session.tagBuild(tags.compose(), build_task["nvr"])
 
                 build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
                 for rpm in build_rpms:
