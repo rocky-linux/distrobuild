@@ -27,11 +27,11 @@ class Settings(BaseSettings):
     gitlab_api_key: str
     session_secret: str
     message_secret: str
-    cookie_secret: str
     tag_prefix: str = "rocky"
     active_point_releases: List[str] = ["3", "4"]
     default_point_release: str = "3"
     redis_url: str = "redis://localhost"
+    database_url: str = "postgres://postgres:postgres@localhost/dbuild"
     production: bool = False
     debug: bool = False
 
@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     version: int = 8
     no_storage_download: bool = False
     no_storage_upload: bool = False
+    import_logs_dir: str = "/tmp"
 
     # mbs
     mbs_url: str
@@ -80,7 +81,7 @@ if settings.default_point_release not in settings.active_point_releases:
     raise Exception("Default point release not active.")
 
 TORTOISE_ORM = {
-    "connections": {"default": "postgres://postgres:postgres@localhost/dbuild"},
+    "connections": {"default": settings.database_url},
     "apps": {
         "distrobuild": {
             "models": [

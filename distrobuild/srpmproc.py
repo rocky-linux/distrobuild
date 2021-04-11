@@ -60,7 +60,7 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
         args.append("--single-tag")
         args.append(single_tag)
 
-    f = open(f"/tmp/import-{import_id}.log", "w")
+    f = open(f"{settings.import_logs_dir}/import-{import_id}.log", "w")
 
     proc = await asyncio.create_subprocess_exec("srpmproc", *args, stdout=asyncio.subprocess.PIPE, stderr=f)
 
