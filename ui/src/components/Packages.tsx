@@ -89,7 +89,7 @@ export const Packages = () => {
       const [, res] = await to(
         Axios.get('/packages/', {
           params: {
-            page: page - 1,
+            page: Math.max(0, page - 1),
             size,
             name: nameFilter,
             modules_only: modulesOnlyFilter,

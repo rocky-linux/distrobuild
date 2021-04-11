@@ -82,7 +82,7 @@ export const PaginatedResourceList = <T extends DataTableRow>(
       const [, res] = await to(
         Axios.get(`/${props.name}/`, {
           params: {
-            page: page - 1,
+            page: Math.max(0, page - 1),
             size,
           },
         })
