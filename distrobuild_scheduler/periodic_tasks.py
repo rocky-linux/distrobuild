@@ -55,6 +55,11 @@ async def atomic_sign_unsigned_builds():
 
                 build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
                 for rpm in build_rpms:
+                    rpm_sigs = koji_session.queryRPMSigs(rpm["id"])
+                    for rpm_sig in rpm_sigs:
+                        if rpm_sig["sigkey"] == settings.sigul_key_id:
+                            continue
+
                     nvr_arch = "%s.%s" % (rpm["nvr"], rpm["arch"])
                     await sign_koji_package(nvr_arch)
                     koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
@@ -82,7 +87,7 @@ async def atomic_check_build_status():
             elif task_info["state"] == koji.TASK_STATES["FAILED"]:
                 try:
                     task_result = koji_session.getTaskResult(build.koji_id)
-                    print(task_result)
+                    logger.debug(task_result)
                 except (koji.BuildError, xmlrpc.client.Fault):
                     build.status = BuildStatus.FAILED
                 except koji.GenericError:
