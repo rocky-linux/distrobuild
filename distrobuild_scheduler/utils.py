@@ -19,4 +19,6 @@
 #  SOFTWARE.
 
 def gitlabify(name: str) -> str:
+    if name == "tree":
+        return "treepkg"
     return name.replace("+", "plus")
