@@ -36,7 +36,7 @@ from distrobuild_scheduler.sigul import sign_koji_package
 
 @atomic()
 async def atomic_sign_unsigned_builds():
-    builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).all()
+    builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).prefetch_related("package").all()
     for build in builds:
         if build.koji_id:
             koji_session.packageListAdd(tags.compose(), build.package.name, "distrobuild")
