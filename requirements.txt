@@ -1,5 +1,5 @@
 fastapi==0.63.0
-tortoise-orm[asyncpg]==0.16.21
+tortoise-orm[asyncpg]==0.16.17
 aerich==0.5.3
 starlette-context==0.3.1
 aiofiles==0.6.0
