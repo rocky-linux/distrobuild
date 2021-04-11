@@ -25,7 +25,6 @@ from distrobuild.models.build import Import, Build
 class BatchImport(Model):
     id = fields.BigIntField(pk=True)
     created_at = fields.DatetimeField(auto_now_add=True)
-    updated_at = fields.DatetimeField(auto_add=True, null=True)
 
     imports: fields.ManyToManyRelation[Import] = fields.ManyToManyField("distrobuild.Import",
                                                                         related_name="batch_imports",
@@ -39,7 +38,6 @@ class BatchImport(Model):
 class BatchBuild(Model):
     id = fields.BigIntField(pk=True)
     created_at = fields.DatetimeField(auto_now_add=True)
-    updated_at = fields.DatetimeField(auto_add=True, null=True)
 
     builds: fields.ManyToManyRelation[Build] = fields.ManyToManyField("distrobuild.Build",
                                                                       related_name="batch_builds",
