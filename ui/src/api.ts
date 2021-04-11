@@ -63,8 +63,11 @@ export interface IBuild {
   created_at: string;
   status: string;
   koji_id: string;
+  mbs_id: string;
+  mbs: boolean;
   branch: string;
   commit: string;
+  import_commit: Commit;
   package: IPackage;
 }
 

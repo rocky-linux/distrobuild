@@ -33,6 +33,7 @@ import {
 import { IBuild, IPaginated } from '../api';
 import { statusToTag } from '../utils/tags';
 import { Link } from 'react-router-dom';
+import { commitsToLinks } from '../utils/commits';
 
 export interface BuildsTableProps {
   builds: IPaginated<IBuild>;
@@ -72,7 +73,30 @@ export const BuildsTable = (props: BuildsTableProps) => {
                   </Link>
                 </TableCell>
                 <TableCell>{statusToTag(item.status)}</TableCell>
-                <TableCell />
+                <TableCell className="space-x-4">
+                  {item.koji_id && (
+                    <a
+                      href={`https://kojidev.rockylinux.org/koji/taskinfo?taskID=${item.koji_id}`}
+                      target="_blank"
+                    >
+                      Koji
+                    </a>
+                  )}
+                  {item.mbs_id && (
+                    <a
+                      href={`https://mbsstg.rockylinux.org/module-build-service/1/module-builds/${item.mbs_id}`}
+                      target="_blank"
+                    >
+                      MBS
+                    </a>
+                  )}
+                  {commitsToLinks(item.mbs, item.package, [item.import_commit])}
+                  {!item.mbs_id &&
+                    !item.koji_id &&
+                    item.status === 'FAILED' && (
+                      <span>Failed during invocation</span>
+                    )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
