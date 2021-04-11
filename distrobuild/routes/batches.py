@@ -53,8 +53,7 @@ class NewBatchResponse(BaseModel):
 @router.get("/imports/", response_model=Page[BatchImport_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_batch_imports():
     return await paginate(
-        BatchImport.annotate(imports_count=Count('imports')).filter(imports_count__gte=2).all().prefetch_related(
-            "imports", "imports__package", "imports__commits").order_by("-created_at"))
+        BatchImport.all().prefetch_related("imports", "imports__package", "imports__commits").order_by("-created_at"))
 
 
 @router.post("/imports/", response_model=NewBatchResponse)
@@ -104,9 +103,7 @@ async def retry_failed_batch_imports(request: Request, batch_import_id: int):
 @router.get("/builds/", response_model=Page[BatchBuild_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_batch_builds():
     return await paginate(
-        BatchBuild.annotate(builds_count=Count('builds')).filter(builds_count__gte=2).all().prefetch_related(
-            "builds", "builds__package", "builds__import_commit").order_by(
-            "-created_at"))
+        BatchBuild.all().prefetch_related("builds", "builds__package", "builds__import_commit").order_by("-created_at"))
 
 
 @router.post("/builds/", response_model=NewBatchResponse)
