@@ -26,7 +26,7 @@ from fastapi_pagination.ext.tortoise import paginate
 from pydantic import BaseModel
 from tortoise.functions import Count
 
-from distrobuild.common import batch_list_check
+from distrobuild.common import batch_list_check, get_user
 from distrobuild.models import BatchImport, BatchBuild, ImportStatus, BuildStatus
 from distrobuild.routes.builds import BuildRequest, queue_build
 from distrobuild.routes.imports import ImportRequest, import_package_route
@@ -59,6 +59,8 @@ async def list_batch_imports():
 
 @router.post("/imports/", response_model=NewBatchResponse)
 async def batch_import_package(request: Request, body: BatchImportRequest):
+    get_user(request)
+
     if body.should_precheck:
         await batch_list_check(body.packages)
 
@@ -76,7 +78,9 @@ async def get_batch_import(batch_import_id: int):
 
 
 @router.post("/imports/{batch_import_id}/cancel", status_code=202)
-async def cancel_batch_import(batch_import_id: int):
+async def cancel_batch_import(request: Request, batch_import_id: int):
+    get_user(request)
+
     batch_import_obj = await BatchImport.filter(id=batch_import_id).prefetch_related("imports").get_or_none()
     if not batch_import_obj:
         raise HTTPException(404, detail="batch import does not exist")
@@ -90,6 +94,8 @@ async def cancel_batch_import(batch_import_id: int):
 
 @router.post("/imports/{batch_import_id}/retry_failed", response_model=NewBatchResponse)
 async def retry_failed_batch_imports(request: Request, batch_import_id: int):
+    get_user(request)
+
     batch_import_obj = await BatchImport.filter(id=batch_import_id).prefetch_related("imports",
                                                                                      "imports__package").get_or_none()
     if not batch_import_obj:
@@ -111,6 +117,8 @@ async def list_batch_builds():
 
 @router.post("/builds/", response_model=NewBatchResponse)
 async def batch_queue_build(request: Request, body: BatchBuildRequest):
+    get_user(request)
+
     if body.should_precheck:
         await batch_list_check(body.packages)
 
@@ -128,7 +136,9 @@ async def get_batch_build(batch_build_id: int):
 
 
 @router.post("/builds/{batch_build_id}/cancel", status_code=202)
-async def cancel_batch_build(batch_build_id: int):
+async def cancel_batch_build(request: Request, batch_build_id: int):
+    get_user(request)
+
     batch_build_obj = await BatchBuild.filter(id=batch_build_id).prefetch_related("builds").get_or_none()
     if not batch_build_obj:
         raise HTTPException(404, detail="batch build does not exist")
@@ -142,6 +152,8 @@ async def cancel_batch_build(batch_build_id: int):
 
 @router.post("/builds/{batch_build_id}/retry_failed", response_model=NewBatchResponse)
 async def retry_failed_batch_builds(request: Request, batch_build_id: int):
+    get_user(request)
+
     batch_build_obj = await BatchBuild.filter(id=batch_build_id).prefetch_related("builds",
                                                                                   "builds__package").get_or_none()
     if not batch_build_obj:
