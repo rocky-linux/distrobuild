@@ -100,7 +100,10 @@ async def check_build_status():
     while True:
         logger.debug("[*] Running periodic task: check_build_status")
 
-        await atomic_check_build_status()
+        try:
+            await atomic_check_build_status()
+        except Exception as e:
+            logger.error(e)
 
         # run every 5 minutes
         await asyncio.sleep(60 * 5)
@@ -111,7 +114,10 @@ async def sign_unsigned_builds():
         while True:
             logger.debug("[*] Running periodic task: sign_unsigned_builds")
 
-            await atomic_sign_unsigned_builds()
+            try:
+                await atomic_sign_unsigned_builds()
+            except Exception as e:
+                logger.error(e)
 
-            # run every 5 minutes
+        # run every 5 minutes
             await asyncio.sleep(60 * 5)
