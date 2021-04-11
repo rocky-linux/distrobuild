@@ -43,12 +43,12 @@ async def run_sigul(args: List[str]):
     proc.stdin.write(f"{settings.sigul_passphrase}\0".encode())
     await proc.wait()
 
-    logger.debug('sigul returned with code: %s', proc.returncode)
     if proc.returncode != 0:
         err = (await proc.stderr.read()).decode()
         # means that the package is already signed.
         # stupid error
         if "ERROR: I/O error: EOFError()" not in err:
+            logger.debug('sigul returned with code: %s', proc.returncode)
             raise SigulException(err)
 
     return await proc.communicate()
