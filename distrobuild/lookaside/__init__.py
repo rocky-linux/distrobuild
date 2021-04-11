@@ -42,14 +42,14 @@ class Lookaside:
     def __init__(self, url: str):
         if url.startswith("file://"):
             self.backend = LookasideBackend.FILE
-            self.dir = url.removeprefix("file://")
+            self.dir = url[len("file://"):]
         elif url.startswith("s3://"):
             self.backend = LookasideBackend.S3
             self.s3 = boto3.client("s3")
-            self.bucket = url.removeprefix("s3://")
+            self.bucket = url[len("s3://"):]
         elif url.startswith("gs://"):
             self.backend = LookasideBackend.GCS
-            self.gcs = storage.Client().bucket(url.removeprefix("gs://"))
+            self.gcs = storage.Client().bucket(url[len("gs://"):])
 
     def upload(self, f: BinaryIO, name: str):
         if self.backend == LookasideBackend.FILE:

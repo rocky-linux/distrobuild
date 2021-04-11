@@ -45,7 +45,7 @@ async def do(package: Package, package_import: Import):
     package.last_import = datetime.datetime.now()
 
     mode = "modules" if package_import.module else "rpms"
-    project = gl.projects.get(f"{settings.repo_prefix.removeprefix('/')}/{mode}/{gitlabify(package.name)}")
+    project = gl.projects.get(f"{settings.repo_prefix[1:]}/{mode}/{gitlabify(package.name)}")
     project.visibility = "public"
     project.save()
 
