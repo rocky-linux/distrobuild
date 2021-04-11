@@ -72,6 +72,8 @@ async def get_import_logs(import_id: int):
 
 @router.post("/{import_id}/cancel", status_code=202)
 async def cancel_import(import_id: int):
+    user = get_user(request)
+
     import_obj = await Import.filter(id=import_id, cancelled=False).get_or_none()
     if not import_obj:
         raise HTTPException(404, detail="import does not exist or is already cancelled")
