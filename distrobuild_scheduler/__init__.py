@@ -44,7 +44,7 @@ async def init_channel(loop) -> None:
     global channel
     global connection
     connection = await aio_pika.connect_robust(settings.broker_url, loop=loop)
-    logger.info("[*] Connected to {}".format(settings.broker_url))
+    logger.info("[*] Connected to amqp")
     channel = await connection.channel()
 
 
