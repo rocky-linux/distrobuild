@@ -29,6 +29,7 @@ from starlette.responses import PlainTextResponse
 from distrobuild.common import gen_body_filters, create_import_order, get_user
 from distrobuild.models import Import, Package, Repo, ImportStatus
 from distrobuild.serialize import Import_Pydantic, ImportGeneral_Pydantic
+from distrobuild.settings import settings
 from distrobuild_scheduler import import_package_task
 
 router = APIRouter(prefix="/imports")
@@ -63,7 +64,7 @@ async def get_import_logs(import_id: int):
     if not import_obj:
         raise HTTPException(404, detail="import does not exist")
     try:
-        with open(f"/tmp/import-{import_obj.id}.log") as f:
+        with open(f"{settings.import_logs_dir}/import-{import_obj.id}.log") as f:
             return f.read()
     except FileNotFoundError:
         raise HTTPException(412, detail="import not started or log has expired")
