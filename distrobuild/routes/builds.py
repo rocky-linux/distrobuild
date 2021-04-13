@@ -111,6 +111,11 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_bui
                     continue
                 extras["mbs"] = True
 
+            # temporarily skip containeronly streams
+            containeronly_stream_prefix = f"{settings.original_import_branch_prefix}{settings.version}-containeronly-stream"
+            if import_commit.branch.startswith(containeronly_stream_prefix):
+                continue
+
             build = await Build.create(package_id=package.id, status=BuildStatus.QUEUED,
                                        executor_username=user["preferred_username"],
                                        point_release=f"{settings.version}_{settings.default_point_release}",
