@@ -38,7 +38,8 @@ async def do(package: Package, package_import: Import):
     koji_session.packageListAdd(tags.base(), package.name, "distrobuild")
 
     original = package.repo == Repo.ORIGINAL
-    branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module, original)
+    branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module,
+                                                   original=original)
     for branch in branch_commits.keys():
         commit = branch_commits[branch]
         await ImportCommit.create(branch=branch, commit=commit, import__id=package_import.id)
