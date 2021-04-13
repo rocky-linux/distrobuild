@@ -26,8 +26,8 @@ from typing import Optional
 from distrobuild.settings import settings
 
 
-async def import_project(import_id: int, source_rpm: str, module_mode: bool = False, original: bool = False,
-                         single_tag: Optional[str] = None) -> dict:
+async def import_project(import_id: int, source_rpm: str, module_mode: bool = False,
+                         single_tag: Optional[str] = None, original: bool = False) -> dict:
     upstream_prefix = f"ssh://{settings.ssh_user}@{settings.gitlab_host}:{settings.ssh_port}{settings.repo_prefix}"
 
     args = [
