@@ -103,7 +103,8 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_bui
     import_commits = await ImportCommit.filter(import__id=latest_import.id).all()
     for import_commit in import_commits:
         if "-beta" not in import_commit.branch:
-            if "-stream" in import_commit.branch:
+            stream_branch_prefix = f"{settings.original_import_branch_prefix}{settings.version}-stream"
+            if import_commit.branch.startswith(stream_branch_prefix):
                 if body.get("ignore_modules"):
                     continue
                 if package.part_of_module and not package.is_module:
