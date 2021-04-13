@@ -62,7 +62,7 @@ async def get_build(build_id: int):
 
 
 @router.post("/{build_id}/cancel", status_code=202)
-async def cancel_build(build_id: int):
+async def cancel_build(request: Request, build_id: int):
     get_user(request)
 
     build_obj = await Build.filter(id=build_id, cancelled=False).get_or_none()

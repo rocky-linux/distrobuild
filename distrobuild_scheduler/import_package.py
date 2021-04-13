@@ -25,10 +25,11 @@ from typing import List, Tuple
 from tortoise.transactions import atomic
 
 from distrobuild.common import tags
-from distrobuild.models import ImportStatus, Package, Import, ImportCommit
+from distrobuild.models import ImportStatus, Package, Import, ImportCommit, Repo
 from distrobuild.session import koji_session, gl
 from distrobuild.settings import settings
 from distrobuild import srpmproc
+from distrobuild_scheduler import logger
 
 from distrobuild_scheduler.utils import gitlabify
 
@@ -37,7 +38,8 @@ from distrobuild_scheduler.utils import gitlabify
 async def do(package: Package, package_import: Import):
     koji_session.packageListAdd(tags.base(), package.name, "distrobuild")
 
-    branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module)
+    original = package.repo == Repo.ORIGINAL
+    branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module, original)
     for branch in branch_commits.keys():
         commit = branch_commits[branch]
         await ImportCommit.create(branch=branch, commit=commit, import__id=package_import.id)
@@ -62,7 +64,7 @@ async def task(package_id: int, import_id: int, dependents: List[Tuple[int, int]
 
             await do(package, package_import)
         except Exception as e:
-            print(e)
+            logger.debug(e)
             package_import.status = ImportStatus.FAILED
             package.last_import = None
         else:

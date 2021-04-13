@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     no_storage_download: bool = False
     no_storage_upload: bool = False
     import_logs_dir: str = "/tmp"
+    original_import_branch_prefix: str = "r"
+    original_rpm_prefix: str = "https://git.rockylinux.org/original/rpms"
+    original_module_prefix: str = "https://git.rockylinux.org/original/modules"
 
     # mbs
     mbs_url: str
