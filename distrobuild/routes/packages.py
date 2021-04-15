@@ -35,7 +35,8 @@ router = APIRouter(prefix="/packages")
 @router.get("/", response_model=Page[PackageGeneral_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_packages(name: Optional[str] = None, modules_only: bool = False, non_modules_only: bool = False,
                         exclude_modular_candidates: bool = False, no_builds_only: bool = False,
-                        with_builds_only: bool = False, no_imports_only: bool = False, with_imports_only: bool = False):
+                        with_builds_only: bool = False, no_imports_only: bool = False, with_imports_only: bool = False,
+                        exclude_part_of_modules: bool = False):
     filters = {}
     if name:
         filters["name__icontains"] = name
@@ -53,6 +54,8 @@ async def list_packages(name: Optional[str] = None, modules_only: bool = False, 
         filters["last_import__isnull"] = True
     if with_imports_only:
         filters["last_import__not_isnull"] = True
+    if exclude_part_of_modules:
+        filters["part_of_module"] = False
 
     return await paginate(Package.all().order_by("updated_at", "name").filter(**filters))
 
