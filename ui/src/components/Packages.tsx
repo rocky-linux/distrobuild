@@ -60,6 +60,10 @@ export const Packages = () => {
   const [disable, setDisable] = React.useState(false);
   const [rows, setRows] = React.useState([]);
 
+  const [ignoreModules, setIgnoreModules] = React.useState<boolean | null>(
+    null
+  );
+
   const [page, setPage] = React.useState(Number(getQueryParam('page') || 1));
   const [size, setSize] = React.useState(
     Math.min(100, Number(getQueryParam('size') || 25))
@@ -245,6 +249,10 @@ export const Packages = () => {
       const ids = rowsToIds(rows);
       ids.should_precheck = false;
 
+      if (ignoreModules) {
+        ids.ignore_modules = ignoreModules;
+      }
+
       const [err] = await to(
         Axios.post(`/batches/${imports ? 'imports' : 'builds'}/`, ids)
       );
@@ -271,7 +279,14 @@ export const Packages = () => {
         onRequestClose={() => setShowBuildModal(false)}
         onRequestSubmit={() => queue(false)}
       >
-        Do you want to queue marked packages for build?
+        <div className="mb-4">
+          Do you want to queue marked packages for build?
+        </div>
+        <Checkbox
+          id="ignore_modules"
+          labelText="Ignore modules"
+          onChange={(checked) => setIgnoreModules(checked)}
+        />
       </Modal>
       <Modal
         open={showImportModal}

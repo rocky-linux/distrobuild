@@ -123,7 +123,7 @@ async def batch_queue_build(request: Request, body: BatchBuildRequest):
     get_user(request)
 
     if body.should_precheck:
-        await batch_list_check(body.packages)
+        await batch_list_check(body.packages, True)
 
     batch = await BatchBuild.create()
 

@@ -67,7 +67,7 @@ async def create_import_order(package: Package, username: str, batch_import_id: 
     return pkg_list
 
 
-async def batch_list_check(packages):
+async def batch_list_check(packages, check_imports: bool = False):
     for package in packages:
         filters = {}
         if package.get("package_id"):
@@ -84,7 +84,7 @@ async def batch_list_check(packages):
             elif package.get("package_name"):
                 detail = f"Package with name {package['package_name']} not found"
             raise HTTPException(412, detail=detail)
-        elif not db_package.imports or len(db_package.imports) == 0:
+        elif check_imports and not db_package.imports or len(db_package.imports) == 0:
             detail = ""
             if package.get("package_id"):
                 detail = f"Package with id {package['package_id']} not imported"

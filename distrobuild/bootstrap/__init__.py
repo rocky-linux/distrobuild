@@ -39,7 +39,7 @@ async def process_repo_dump(repo: Repo, responsible_username: str) -> None:
         lines = f.readlines()
         for line in lines:
             package_name = line.strip()
-            existing_package = await Package.filter(name=package_name).get_or_none()
+            existing_package = await Package.filter(name=package_name, repo__not=Repo.MODULAR_CANDIDATE).get_or_none()
             if existing_package and repo != Repo.MODULAR_CANDIDATE:
                 existing_package.repo = repo
                 existing_package.is_package = True
