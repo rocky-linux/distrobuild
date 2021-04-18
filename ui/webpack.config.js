@@ -25,6 +25,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+const CompressionPlugin = require('compression-webpack-plugin');
 const webpack = require('webpack');
 
 const prod = process.env.NODE_ENV === 'production';
@@ -53,6 +54,7 @@ module.exports = {
     }),
     dev && new webpack.HotModuleReplacementPlugin(),
     dev && new ReactRefreshWebpackPlugin(),
+    dev && new CompressionPlugin(),
   ].filter(Boolean),
   devServer: {
     hot: true,

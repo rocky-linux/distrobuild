@@ -33,6 +33,7 @@
     "carbon-components-react": "^7.27.0",
     "carbon-icons": "^7.0.7",
     "clean-webpack-plugin": "^3.0.0",
+    "compression-webpack-plugin": "^7.1.2",
     "css-loader": "^5.0.1",
     "html-webpack-plugin": "^4.5.1",
     "postcss": "^8.2.9",

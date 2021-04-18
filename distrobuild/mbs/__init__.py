@@ -68,10 +68,9 @@ class MBSClient:
             )
 
             if r.status_code == 409:
-                raise MBSConflictException()
-
-            if r.status_code == 401:
-                raise MBSUnauthorizedException()
+                raise MBSConflictException("A MBS conflict occurred")
+            elif r.status_code == 401:
+                raise MBSUnauthorizedException("Not authorized")
 
             data = r.json()
             return data["id"]
