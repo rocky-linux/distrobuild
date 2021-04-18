@@ -38,7 +38,8 @@ from distrobuild_scheduler.utils import gitlabify
 async def do(package: Package, build: Build, token: Optional[str]):
     try:
         if build.mbs:
-            task_id = await mbs_client.build(token, package.name, build.import_commit.branch, build.import_commit.commit)
+            task_id = await mbs_client.build(token, package.name, build.import_commit.branch,
+                                             build.import_commit.commit)
 
             build.mbs_id = task_id
             build.status = BuildStatus.BUILDING
@@ -65,9 +66,6 @@ async def do(package: Package, build: Build, token: Optional[str]):
         await build.save()
     except Exception:
         raise
-    else:
-        package.last_import = datetime.datetime.now()
-        await package.save()
 
 
 # noinspection DuplicatedCode
