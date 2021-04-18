@@ -149,7 +149,7 @@ async def check_build_status():
             for build in builds:
                 await atomic_check_build_status(build)
         except Exception as e:
-            logger.error(e)
+            logger.error("check_build_status", e)
 
         # run every 5 minutes
         await asyncio.sleep(60 * 5)
@@ -166,7 +166,7 @@ async def sign_unsigned_builds():
                 for build in builds:
                     await atomic_sign_unsigned_builds(build)
             except Exception as e:
-                logger.error(e)
+                logger.error("sign_unsigned_builds", e)
 
             # run every 5 minutes
             await asyncio.sleep(60 * 5)
