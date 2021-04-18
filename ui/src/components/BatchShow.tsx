@@ -45,6 +45,7 @@ export const BatchShow = <T extends unknown>(props: BatchShowProps) => {
   const [showCancelModal, setShowCancelModal] = React.useState(false);
   const [showSuccessModal, setShowSuccessModal] = React.useState(false);
   const [showRetryModal, setShowRetryModal] = React.useState(false);
+  const [showScratchModal, setShowScratchModal] = React.useState(false);
   const [disable, setDisable] = React.useState(false);
 
   const params = useParams<BatchShowParams>();
@@ -99,6 +100,25 @@ export const BatchShow = <T extends unknown>(props: BatchShowProps) => {
       setShowCancelModal(false);
       setDisable(false);
       window.location.pathname = `/batches/${props.name}/${res.data.id}`;
+    })().then();
+  };
+
+  const mergeScratch = () => {
+    setDisable(true);
+
+    (async () => {
+      const [err] = await to(
+        Axios.post(`/batches/${props.name}/${params.id}/merge_scratch`)
+      );
+      if (err) {
+        alert('API Error');
+        setDisable(false);
+        return;
+      }
+
+      setShowScratchModal(false);
+      setDisable(false);
+      window.location.reload();
     })().then();
   };
 
@@ -165,6 +185,18 @@ export const BatchShow = <T extends unknown>(props: BatchShowProps) => {
       >
         Are you sure you want to retry failed {props.name}?
       </Modal>
+      {props.name === 'builds' && (
+        <Modal
+          open={showScratchModal}
+          primaryButtonText="Merge"
+          secondaryButtonText="Go back"
+          primaryButtonDisabled={disable}
+          onRequestClose={() => setShowScratchModal(false)}
+          onRequestSubmit={() => mergeScratch()}
+        >
+          Are you sure you want merge all scratch builds?
+        </Modal>
+      )}
 
       <Tile className="flex items-center justify-between">
         <h3>Batch #{params.id}</h3>
@@ -175,6 +207,15 @@ export const BatchShow = <T extends unknown>(props: BatchShowProps) => {
             failedItems.length > 0 && (
               <Button onClick={() => setShowRetryModal(true)}>
                 Retry failed
+              </Button>
+            )}
+          {window.STATE.authenticated &&
+            !shouldShowCancel &&
+            succeededItems &&
+            succeededItems.filter((x) => x.scratch).length !==
+              succeededItems.filter((x) => x.scratch_merged).length && (
+              <Button onClick={() => setShowScratchModal(true)}>
+                Merge scratch builds
               </Button>
             )}
           {window.STATE.authenticated && shouldShowCancel && (

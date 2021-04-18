@@ -39,6 +39,7 @@ import {
   TableRow,
   TableToolbar,
   TextArea,
+  TextInput,
 } from 'carbon-components-react';
 
 import { IPaginated, Axios } from '../api';
@@ -55,6 +56,9 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
   const [ignoreModules, setIgnoreModules] = React.useState<boolean | null>(
     null
   );
+  const [scratch, setScratch] = React.useState<boolean | null>(null);
+  const [archOverride, setArchOverride] = React.useState<string | null>(null);
+  const [forceTag, setForceTag] = React.useState<string | null>(null);
   const [disable, setDisable] = React.useState(false);
 
   const [page, setPage] = React.useState(Number(getQueryParam('page') || 1));
@@ -99,7 +103,10 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
       const [err, res] = await to(
         Axios.post(`/batches/${props.name}/`, {
           packages,
+          scratch,
           ignore_modules: ignoreModules,
+          arch_override: archOverride,
+          force_tag: forceTag,
         })
       );
       if (err) {
@@ -133,6 +140,7 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
     { header: 'Package count', key: 'package_count' },
     { header: 'Failed', key: 'failed' },
     { header: 'Succeeded', key: 'succeeded' },
+    { header: 'Executor', key: 'executor_username' },
   ];
 
   return batchRes.items ? (
@@ -152,12 +160,28 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
             labelText="Package list"
           />
           {props.name === 'builds' && (
-            <Checkbox
-              className="mt-4"
-              id="ignore_modules"
-              labelText="Ignore modules"
-              onChange={onIgnoreModulesChange}
-            />
+            <div className="mt-4">
+              <Checkbox
+                id="ignore_modules"
+                labelText="Ignore modules"
+                onChange={onIgnoreModulesChange}
+              />
+              <Checkbox
+                id="scratch"
+                labelText="Scratch build"
+                onChange={(checked) => setScratch(checked)}
+              />
+              <TextInput
+                id="arch_override"
+                labelText="Arch override"
+                onChange={(e) => setArchOverride(e.currentTarget.value)}
+              />
+              <TextInput
+                id="force_tag"
+                labelText="Force target"
+                onChange={(e) => setForceTag(e.currentTarget.value)}
+              />
+            </div>
           )}
         </>
       </Modal>
@@ -246,6 +270,20 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
                                   (x) => x.status === 'SUCCEEDED'
                                 ).length
                               }
+                            </TableCell>
+                          )}
+                          {pkg && cell.info.header === 'executor_username' && (
+                            <TableCell key={`${cell.id}-succeeded`}>
+                              {pkg[props.name].length > 0 ? (
+                                <a
+                                  target="_blank"
+                                  href={`${window.SETTINGS.gitlabUrl}/${cell.value}`}
+                                >
+                                  {pkg[props.name][0]['executor_username']}
+                                </a>
+                              ) : (
+                                <span>System</span>
+                              )}
                             </TableCell>
                           )}
                         </>

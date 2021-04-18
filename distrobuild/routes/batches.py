@@ -18,19 +18,19 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi_pagination import Page, pagination_params
 from fastapi_pagination.ext.tortoise import paginate
 from pydantic import BaseModel
-from tortoise.functions import Count
 
 from distrobuild.common import batch_list_check, get_user
 from distrobuild.models import BatchImport, BatchBuild, ImportStatus, BuildStatus
 from distrobuild.routes.builds import BuildRequest, queue_build
 from distrobuild.routes.imports import ImportRequest, import_package_route
 from distrobuild.serialize import BatchImport_Pydantic, BatchBuild_Pydantic
+from distrobuild_scheduler import merge_scratch_task
 
 router = APIRouter(prefix="/batches")
 
@@ -43,6 +43,9 @@ class BatchImportRequest(BaseModel):
 class BatchBuildRequest(BaseModel):
     should_precheck: bool = True
     ignore_modules: bool = False
+    scratch: bool = False
+    arch_override: Optional[str]
+    force_tag: Optional[str]
     packages: List[BuildRequest]
 
 
@@ -53,7 +56,7 @@ class NewBatchResponse(BaseModel):
 @router.get("/imports/", response_model=Page[BatchImport_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_batch_imports():
     return await paginate(
-        BatchImport.annotate(imports_count=Count('imports')).filter(imports_count__gte=2).all().prefetch_related(
+        BatchImport.all().prefetch_related(
             "imports", "imports__package", "imports__commits").order_by("-created_at"))
 
 
@@ -110,7 +113,7 @@ async def retry_failed_batch_imports(request: Request, batch_import_id: int):
 @router.get("/builds/", response_model=Page[BatchBuild_Pydantic], dependencies=[Depends(pagination_params)])
 async def list_batch_builds():
     return await paginate(
-        BatchBuild.annotate(builds_count=Count('builds')).filter(builds_count__gte=2).all().prefetch_related(
+        BatchBuild.all().prefetch_related(
             "builds", "builds__package", "builds__import_commit").order_by(
             "-created_at"))
 
@@ -125,7 +128,8 @@ async def batch_queue_build(request: Request, body: BatchBuildRequest):
     batch = await BatchBuild.create()
 
     for build_request in body.packages:
-        await queue_build(request, dict(**dict(build_request), ignore_modules=body.ignore_modules), batch.id)
+        await queue_build(request, dict(**dict(build_request), ignore_modules=body.ignore_modules, scratch=body.scratch,
+                                        arch_override=body.arch_override, force_tag=body.force_tag), batch.id)
 
     return NewBatchResponse(id=batch.id)
 
@@ -146,6 +150,21 @@ async def cancel_batch_build(request: Request, batch_build_id: int):
     for build in batch_build_obj.builds:
         build.status = BuildStatus.CANCELLED
         await build.save()
+
+    return {}
+
+
+@router.post("/builds/{batch_build_id}/merge_scratch", status_code=202)
+async def merge_batch_build(request: Request, batch_build_id: int):
+    get_user(request)
+
+    batch_build_obj = await BatchBuild.filter(id=batch_build_id).prefetch_related("builds").get_or_none()
+    if not batch_build_obj:
+        raise HTTPException(404, detail="batch build does not exist")
+
+    for build in batch_build_obj.builds:
+        if build.scratch and not build.scratch_merged:
+            await merge_scratch_task(build.id)
 
     return {}
 

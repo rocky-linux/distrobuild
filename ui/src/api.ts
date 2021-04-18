@@ -69,6 +69,8 @@ export interface IBuild {
   commit: string;
   import_commit: Commit;
   package: IPackage;
+  scratch: boolean;
+  scratch_merged: boolean;
 }
 
 export interface IBatchBuild {

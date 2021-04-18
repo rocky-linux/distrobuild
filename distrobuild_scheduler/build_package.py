@@ -22,6 +22,7 @@ import datetime
 
 from typing import Optional
 
+import koji
 from tortoise.transactions import atomic
 
 from distrobuild.common import tags
@@ -47,7 +48,14 @@ async def do(package: Package, build: Build, token: Optional[str]):
 
             host = f"git+https://{settings.gitlab_host}{settings.repo_prefix}"
             source = f"{host}/rpms/{gitlabify(package.name)}.git?#{build.import_commit.commit}"
-            task_id = koji_session.build(source, target)
+
+            opts = {}
+            if build.scratch:
+                opts["scratch"] = True
+            if build.arch_override:
+                opts["arch_override"] = koji.parse_arches(build.arch_override)
+
+            task_id = koji_session.build(source, target, opts)
 
             build.koji_id = task_id
             build.status = BuildStatus.BUILDING

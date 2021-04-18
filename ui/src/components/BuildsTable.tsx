@@ -72,7 +72,12 @@ export const BuildsTable = (props: BuildsTableProps) => {
                     {item.package.name}
                   </Link>
                 </TableCell>
-                <TableCell>{statusToTag(item.status)}</TableCell>
+                <TableCell>
+                  {statusToTag(
+                    item.status,
+                    item.scratch ? item.scratch_merged : undefined
+                  )}
+                </TableCell>
                 <TableCell className="space-x-4">
                   {item.koji_id && (
                     <a

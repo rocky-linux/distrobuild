@@ -80,3 +80,18 @@ async def build_package_task(package_id: int, build_id: int, token: Optional[str
         ),
         routing_key=settings.routing_key,
     )
+
+
+async def merge_scratch_task(build_id: int):
+    msg_body = {
+        "message": "merge_scratch",
+        "build_id": build_id,
+    }
+    encoded = json.dumps(msg_body).encode()
+
+    await channel.default_exchange.publish(
+        aio_pika.Message(
+            body=encoded,
+        ),
+        routing_key=settings.routing_key,
+    )

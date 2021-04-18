@@ -92,12 +92,15 @@ class RedisSessionMiddleware(BaseHTTPMiddleware):
             redis_val = b64encode(json.dumps(request.scope["session"]).encode("utf-8"))
             if redis_key == "":
                 redis_key = secrets.token_hex(32)
-            await self.redis.set(redis_key, redis_val)
-            await self.redis.expire(redis_key, 3000)
+                await self.redis.set(redis_key, redis_val)
+                await self.redis.expire(redis_key, 3000)
+            else:
+                await self.redis.set(redis_key, redis_val)
             data = self.signer.sign(redis_key)
             response.set_cookie(self.session_cookie, data.decode("utf-8"), self.max_age, httponly=True,
                                 samesite=self.same_site, path="/", secure=self.https_only)
         elif not initial_session_was_empty:
             response.delete_cookie(self.session_cookie, path="/")
+            await self.redis.delete(redis_key)
 
         return response

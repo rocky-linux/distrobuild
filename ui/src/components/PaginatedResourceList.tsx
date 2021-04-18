@@ -110,6 +110,7 @@ export const PaginatedResourceList = <T extends DataTableRow>(
     { header: 'Initiated', key: 'created_at' },
     { header: 'Package', key: 'package' },
     { header: 'Status', key: 'status' },
+    { header: 'Executor', key: 'executor_username' },
     { header: '', key: 'extra' },
   ];
 
@@ -166,7 +167,7 @@ export const PaginatedResourceList = <T extends DataTableRow>(
                         )}
                         {pkg && cell.info.header === 'package' && (
                           <TableCell key={`${cell.id}-package`}>
-                            <Link to={`/${props.name}/${pkg['package']['id']}`}>
+                            <Link to={`/packages/${pkg['package']['id']}`}>
                               {pkg['package']['name']}
                             </Link>
                           </TableCell>
@@ -174,6 +175,16 @@ export const PaginatedResourceList = <T extends DataTableRow>(
                         {pkg && cell.info.header === 'status' && (
                           <TableCell key={`${cell.id}-status`}>
                             {statusToTag(pkg['status'])}
+                          </TableCell>
+                        )}
+                        {pkg && cell.info.header === 'executor_username' && (
+                          <TableCell key={`${cell.id}-executor_username`}>
+                            <a
+                              target="_blank"
+                              href={`${window.SETTINGS.gitlabUrl}/${cell.value}`}
+                            >
+                              {pkg['executor_username']}
+                            </a>
                           </TableCell>
                         )}
                         {pkg && cell.info.header === 'extra' && (

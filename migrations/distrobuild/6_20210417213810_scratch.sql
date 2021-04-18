@@ -20,28 +20,18 @@
  * SOFTWARE.
  */
 
-import { Tag } from 'carbon-components-react';
-import React from 'react';
+-- upgrade --
+alter table builds
+    add column scratch bool default false not null;
+alter table builds
+    add column scratch_merged bool default false not null;
+alter table builds
+    add column arch_override text;
 
-export const statusToTag = (status, merged?: boolean) => {
-  switch (status) {
-    case 'QUEUED':
-      return <Tag type="gray">Queued</Tag>;
-    case 'BUILDING':
-      return <Tag type="blue">Building</Tag>;
-    case 'IN_PROGRESS':
-      return <Tag type="blue">In progress</Tag>;
-    case 'SUCCEEDED':
-      return (
-        <Tag type="green">
-          Succeeded
-          {merged !== undefined &&
-            (merged === false ? ' (Not merged)' : ' (Merged)')}
-        </Tag>
-      );
-    case 'FAILED':
-      return <Tag type="red">Failed</Tag>;
-    case 'CANCELLED':
-      return <Tag type="teal">Cancelled</Tag>;
-  }
-};
+-- downgrade --
+alter table builds
+    drop column scratch;
+alter table builds
+    drop column scratch_merged;
+alter table builds
+    drop column arch_override;

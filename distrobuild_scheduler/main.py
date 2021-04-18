@@ -32,7 +32,7 @@ from distrobuild.settings import TORTOISE_ORM, settings
 from distrobuild.session import message_cipher
 
 # noinspection PyUnresolvedReferences
-from distrobuild_scheduler import init_channel, build_package, import_package, logger, periodic_tasks
+from distrobuild_scheduler import init_channel, build_package, import_package, logger, periodic_tasks, merge_scratch
 
 
 async def consume_messages(i: int):
@@ -53,6 +53,8 @@ async def consume_messages(i: int):
                     if token:
                         token = message_cipher.decrypt(token.encode()).decode()
                     await build_package.task(body["package_id"], body["build_id"], token)
+                elif msg == "merge_scratch":
+                    await merge_scratch.task(body["build_id"])
                 else:
                     logger.error("[*] Received unknown message")
 

@@ -4,6 +4,7 @@ import {
   Modal,
   SkeletonPlaceholder,
   Tag,
+  TextInput,
   Tile,
 } from 'carbon-components-react';
 import { useParams } from 'react-router-dom';
@@ -18,6 +19,7 @@ export const ShowPackage = () => {
   const [showBuildModal, setShowBuildModal] = React.useState(false);
   const [showSuccessModal, setShowSuccessModal] = React.useState(false);
   const [showResetBuildModal, setShowResetBuildModal] = React.useState(false);
+  const [onlyBranch, setOnlyBranch] = React.useState<string | null>(null);
   const [disable, setDisable] = React.useState(false);
 
   const params = useParams<RouterParams>();
@@ -42,6 +44,7 @@ export const ShowPackage = () => {
       const [err] = await to(
         Axios.post(`/builds/`, {
           package_id: pkg.id,
+          only_branch: onlyBranch,
         })
       );
       if (err) {
@@ -54,6 +57,7 @@ export const ShowPackage = () => {
       setDisable(false);
       setShowSuccessModal(true);
     })().then();
+    window.location.reload();
   };
 
   const queueImport = () => {
@@ -74,6 +78,7 @@ export const ShowPackage = () => {
       setShowImportModal(false);
       setDisable(false);
       setShowSuccessModal(true);
+      window.location.reload();
     })().then();
   };
 
@@ -93,6 +98,7 @@ export const ShowPackage = () => {
       setShowResetBuildModal(false);
       setDisable(false);
       setShowSuccessModal(true);
+      window.location.reload();
     })().then();
   };
 
@@ -114,7 +120,20 @@ export const ShowPackage = () => {
             onRequestClose={() => setShowBuildModal(false)}
             onRequestSubmit={() => queueBuild()}
           >
-            Do you want to queue this package for build?
+            <div className="mb-4">
+              Do you want to queue this package for build?
+            </div>
+            <TextInput
+              id="only_branch"
+              labelText="Single branch"
+              onChange={(e) =>
+                setOnlyBranch(
+                  e.currentTarget.value.trim().length === 0
+                    ? null
+                    : e.currentTarget.value
+                )
+              }
+            />
           </Modal>
           <Modal
             open={showImportModal}

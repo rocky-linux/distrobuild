@@ -18,24 +18,31 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-from distrobuild.settings import settings
+from tortoise.transactions import atomic
+
+from distrobuild.models import Build, BuildStatus
+from distrobuild.session import koji_session
 
 
-def base() -> str:
-    return f"dist-{settings.tag_prefix}{settings.version}"
+@atomic()
+async def do(build: Build):
+    if build.koji_id and build.scratch and not build.scratch_merged and build.status == BuildStatus.SUCCEEDED:
+        koji_session.mergeScratch(build.koji_id)
+        build.scratch_merged = True
+        await build.save()
 
 
-def compose() -> str:
-    return f"{base()}-compose"
+# noinspection DuplicatedCode
+async def task(build_id: int):
+    build = await Build.filter(id=build_id, scratch=True).get()
 
+    if not build:
+        return
 
-def module_compose() -> str:
-    return f"{base()}-module-compose"
+    if build.status == BuildStatus.CANCELLED:
+        return
 
-
-def testing() -> str:
-    return f"{base()}-testing"
-
-
-def modular_updates_candidate() -> str:
-    return "modular-updates-candidate"
+    try:
+        await do(build)
+    except Exception as e:
+        print(e)
