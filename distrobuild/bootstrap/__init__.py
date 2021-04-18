@@ -20,7 +20,9 @@
 
 import json
 
+from distrobuild.common import tags
 from distrobuild.models import Package, PackageModule, Repo
+from distrobuild.session import koji_session
 from distrobuild.settings import settings
 
 
@@ -38,13 +40,19 @@ async def process_repo_dump(repo: Repo, responsible_username: str) -> None:
         for line in lines:
             package_name = line.strip()
             existing_package = await Package.filter(name=package_name).get_or_none()
-            if existing_package:
+            if existing_package and repo != Repo.MODULAR_CANDIDATE:
                 existing_package.repo = repo
                 existing_package.is_package = True
                 await existing_package.save()
                 continue
+
+            is_package = True
+            if repo == Repo.MODULAR_CANDIDATE:
+                koji_session.packageListAdd(tags.modular_updates_candidate(), package_name, "distrobuild")
+                is_package = False
+
             await _internal_create_package(name=package_name,
-                                           is_package=True,
+                                           is_package=is_package,
                                            repo=repo,
                                            responsible_username=responsible_username)
 
@@ -76,10 +84,11 @@ async def process_module_dump(responsible_username: str) -> None:
             if m_package and m_package.repo != Repo.MODULAR_CANDIDATE:
                 m_package.part_of_module = True
 
+            # Either this is safe to skip, or it will cause build failure later
+            # This is not a bug though as all package records should be up to
+            # date before bootstrapping the module list
             if not m_package:
-                m_package = await _internal_create_package(name=m_package_name,
-                                                           repo=Repo.MODULAR_CANDIDATE,
-                                                           responsible_username=responsible_username)
+                continue
 
             await m_package.save()
             await PackageModule.create(package_id=m_package.id, module_parent_package_id=existing_package.id)
