@@ -75,7 +75,8 @@ async def batch_list_check(packages):
         elif package.get("package_name"):
             filters["name"] = package["package_name"]
 
-        db_package = await Package.filter(**filters).prefetch_related("imports").first()
+        db_package = await Package.filter(**filters, repo__not=Repo.MODULAR_CANDIDATE).prefetch_related(
+            "imports").first()
         if not db_package:
             detail = ""
             if package.get("package_id"):
