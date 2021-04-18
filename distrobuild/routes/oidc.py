@@ -22,6 +22,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from distrobuild.auth import oidc
+from distrobuild.session import message_cipher
 from distrobuild.settings import settings
 
 router = APIRouter(prefix="/oidc")
@@ -54,5 +55,6 @@ async def callback(request: Request):
                 request.session.update(not_authorized=f"User not in '{settings.oidc_required_group}' group")
                 return RedirectResponse(url="/")
 
-    request.session.update(user=user, token=token["access_token"])
+    access_token = message_cipher.encrypt(token["access_token"].encode()).decode()
+    request.session.update(user=user, token=access_token)
     return RedirectResponse(url="/")

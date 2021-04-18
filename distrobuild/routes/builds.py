@@ -104,9 +104,6 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_bui
 
     extras = {}
     token = None
-    package_modules = await PackageModule.filter(package_id=package.id)
-    if len(package_modules) > 0 or package.is_module:
-        token = message_cipher.encrypt(request.session.get("token").encode()).decode()
 
     if body.get("force_tag"):
         extras["force_tag"] = body.get("force_tag")
@@ -138,6 +135,8 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_bui
                 if package.part_of_module and not package.is_module:
                     continue
                 extras["mbs"] = True
+                if not token:
+                    token = request.session.get("token")
 
             # temporarily skip containeronly streams
             containeronly_stream_prefix = f"{settings.original_import_branch_prefix}{settings.version}-containeronly-stream"
