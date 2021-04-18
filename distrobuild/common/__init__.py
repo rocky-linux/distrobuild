@@ -22,19 +22,25 @@ from typing import List, Tuple, Optional
 
 from fastapi import Request, HTTPException
 
-from distrobuild.models import Import, ImportStatus, Package, PackageModule, BatchImportPackage
+from distrobuild.models import Import, ImportStatus, Package, PackageModule, BatchImportPackage, Repo
 from distrobuild.settings import settings
 
 
 def gen_body_filters(body: dict) -> dict:
+    filters = {
+        "repo__not": Repo.MODULAR_CANDIDATE
+    }
+
     if body.get("package_name"):
-        return {"name": body["package_name"]}
+        filters["name"] = body["package_name"]
     if body.get("package_id"):
-        return {"id": body["package_id"]}
+        filters["id"] = body["package_id"]
+
+    return filters
 
 
-async def create_import_order(package: Package, username: str, batch_import_id: Optional[int] = None) -> List[
-    Tuple[int, int]]:
+async def create_import_order(package: Package, username: str, batch_import_id: Optional[int] = None) -> \
+        List[Tuple[int, int]]:
     pkg_list = []
 
     if package.is_package:
