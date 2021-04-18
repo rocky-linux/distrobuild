@@ -114,6 +114,8 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_bui
         latest_build = await Build.filter(package_id=package.id, status=BuildStatus.SUCCEEDED).prefetch_related(
             "import_commit").order_by(
             "-created_at").first()
+        if not latest_build:
+            return {}
         import_commits = [latest_build.import_commit]
     else:
         latest_import = await Import.filter(package_id=package.id).order_by("-created_at").first()
