@@ -41,12 +41,15 @@ export const ShowPackage = () => {
     setDisable(true);
 
     (async () => {
-      const [err] = await to(
-        Axios.post(`/builds/`, {
-          package_id: pkg.id,
-          only_branch: onlyBranch,
-        })
-      );
+      const data = {
+        package_id: pkg.id,
+      };
+
+      if (onlyBranch) {
+        data['only_branch'] = onlyBranch;
+      }
+
+      const [err] = await to(Axios.post(`/builds/`, data));
       if (err) {
         alert('API Error');
         setDisable(false);
@@ -56,8 +59,8 @@ export const ShowPackage = () => {
       setShowBuildModal(false);
       setDisable(false);
       setShowSuccessModal(true);
+      window.location.reload();
     })().then();
-    window.location.reload();
   };
 
   const queueImport = () => {
