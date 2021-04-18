@@ -21,13 +21,12 @@
 import asyncio
 import datetime
 import xmlrpc
-from typing import List
 
 import koji
 from tortoise.transactions import atomic
 
 from distrobuild.common import tags
-from distrobuild.models import Build, BuildStatus, Package
+from distrobuild.models import Build, BuildStatus, Package, PackageModule
 from distrobuild.session import koji_session, mbs_client
 from distrobuild.settings import settings
 
@@ -35,33 +34,66 @@ from distrobuild_scheduler import logger
 from distrobuild_scheduler.sigul import sign_koji_package
 
 
+def sign_build_rpms(build_rpms):
+    for build_rpm in build_rpms:
+        rpm_sigs = koji_session.queryRPMSigs(build_rpm["id"])
+        for rpm_sig in rpm_sigs:
+            if rpm_sig["sigkey"] == settings.sigul_key_id:
+                continue
+
+        nvr_arch = "%s.%s" % (build_rpm["nvr"], build_rpm["arch"])
+        await sign_koji_package(nvr_arch)
+        koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
+
+
+def tag_if_not_tagged(build_history, nvr, tag):
+    if "tag_listing" in build_history:
+        for tag in build_history["tag_listing"]:
+            if tag["tag.name"] == tag:
+                return
+
+    koji_session.tagBuild(tag, nvr)
+
+
 @atomic()
 async def atomic_sign_unsigned_builds(build: Build):
     if build.koji_id:
         koji_session.packageListAdd(tags.compose(), build.package.name, "distrobuild")
 
-        should_tag = True
         build_tasks = koji_session.listBuilds(taskID=build.koji_id)
         for build_task in build_tasks:
             build_history = koji_session.queryHistory(build=build_task["build_id"])
-            if "tag_listing" in build_history:
-                for tag in build_history["tag_listing"]:
-                    if tag["tag.name"] == tags.compose():
-                        should_tag = False
-
-            if should_tag:
-                koji_session.tagBuild(tags.compose(), build_task["nvr"])
+            tag_if_not_tagged(build_history, build_task["nvr"], tags.compose())
 
             build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
-            for rpm in build_rpms:
-                rpm_sigs = koji_session.queryRPMSigs(rpm["id"])
-                for rpm_sig in rpm_sigs:
-                    if rpm_sig["sigkey"] == settings.sigul_key_id:
-                        continue
+            sign_build_rpms(build_rpms)
 
-                nvr_arch = "%s.%s" % (rpm["nvr"], rpm["arch"])
-                await sign_koji_package(nvr_arch)
-                koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
+        build.signed = True
+        await build.save()
+    elif build.mbs_id:
+        mbs_build = mbs_client.get_build(build.mbs_id)
+        rpms = mbs_build["tasks"]["rpms"]
+        for rpm_name in rpms.keys():
+            if rpm_name == "module-build-macros":
+                continue
+            rpm = rpms[rpm_name]
+            if rpm["state"] != 1:
+                continue
+
+            build_rpms = koji_session.listBuildRPMs(rpm["nvr"])
+
+            if len(build_rpms) > 0:
+                build_history = koji_session.queryHistory(build=build_rpms[0]["build_id"])
+                tag_if_not_tagged(build_history, rpm["nvr"], tags.compose())
+
+            package_modules = await PackageModule.filter(module_parent_package_id=build.package.id).all()
+            for package_module in package_modules:
+                koji_package = koji_session.getPackage(package_module)
+                koji_builds = koji_session.listBuilds(koji_package["id"])
+                if len(koji_builds) > 0:
+                    tag_if_not_tagged([], koji_builds[len(koji_builds)-1]["nvr"], tags.modular_updates_candidate())
+
+            sign_build_rpms(build_rpms)
 
         build.signed = True
         await build.save()
@@ -127,11 +159,12 @@ async def sign_unsigned_builds():
             logger.debug("[*] Running periodic task: sign_unsigned_builds")
 
             try:
-                builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).prefetch_related("package").all()
+                builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).prefetch_related(
+                    "package").all()
                 for build in builds:
                     await atomic_sign_unsigned_builds(build)
             except Exception as e:
                 logger.error(e)
 
-        # run every 5 minutes
+            # run every 5 minutes
             await asyncio.sleep(60 * 5)

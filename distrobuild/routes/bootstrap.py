@@ -67,8 +67,9 @@ async def import_from_koji(request: Request):
     packages_without_builds = await Package.filter(last_build__isnull=True).all()
     for package in packages_without_builds:
         for koji_build in all_koji_builds:
-            if package.name == koji_build["name"] and not package.is_module and not package.part_of_module and \
-                    koji_build["state"] == 1:
+            if package.name == koji_build[
+                "name"] and not package.is_module and not package.part_of_module and \
+                    package.repo != Repo.MODULAR_CANDIDATE and koji_build["state"] == 1:
                 await import_build_from_koji(user["preferred_username"], package, koji_build)
 
     return {}
