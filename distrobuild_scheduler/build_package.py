@@ -18,8 +18,6 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 
-import datetime
-
 from typing import Optional
 
 import koji
@@ -30,6 +28,7 @@ from distrobuild.mbs import MBSConflictException
 from distrobuild.models import Build, BuildStatus, Package
 from distrobuild.session import koji_session, mbs_client
 from distrobuild.settings import settings
+from distrobuild_scheduler import logger
 
 from distrobuild_scheduler.utils import gitlabify
 
@@ -79,7 +78,7 @@ async def task(package_id: int, build_id: int, token: Optional[str]):
     try:
         await do(package, build, token)
     except Exception as e:
-        print(e)
+        logger.error(e)
         build.status = BuildStatus.FAILED
         package.last_build = None
     finally:

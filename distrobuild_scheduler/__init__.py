@@ -26,7 +26,6 @@ from typing import Tuple, Optional, List
 import aio_pika
 
 from distrobuild.settings import settings
-from distrobuild_scheduler import import_package
 
 # singleton
 connection: Optional[aio_pika.RobustConnection] = None

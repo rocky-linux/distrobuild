@@ -29,6 +29,7 @@ from distrobuild.models import ImportStatus, Package, Import, ImportCommit, Repo
 from distrobuild.session import koji_session, gl
 from distrobuild.settings import settings
 from distrobuild import srpmproc
+from distrobuild_scheduler import logger
 
 from distrobuild_scheduler.utils import gitlabify
 
@@ -64,7 +65,7 @@ async def task(package_id: int, import_id: int, dependents: List[Tuple[int, int]
 
             await do(package, package_import)
         except Exception as e:
-            print(e)
+            logger.error(e)
             package_import.status = ImportStatus.FAILED
             package.last_import = None
         else:
