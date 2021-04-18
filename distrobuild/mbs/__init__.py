@@ -47,7 +47,7 @@ class MBSClient:
             r = await client.get(f"{self.mbs_url}/1/module-builds/{mbs_id}")
 
             if r.status_code == 404:
-                raise MBSBuildNotFound()
+                raise MBSBuildNotFound("Build not found")
 
             return r.json()
 
@@ -73,4 +73,8 @@ class MBSClient:
                 raise MBSUnauthorizedException("Not authorized")
 
             data = r.json()
+
+            if not data.get("id"):
+                raise Exception(data["message"])
+
             return data["id"]
