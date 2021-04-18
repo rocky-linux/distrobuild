@@ -34,7 +34,7 @@ from distrobuild_scheduler import logger
 from distrobuild_scheduler.sigul import sign_koji_package
 
 
-def sign_build_rpms(build_rpms):
+async def sign_build_rpms(build_rpms):
     for build_rpm in build_rpms:
         rpm_sigs = koji_session.queryRPMSigs(build_rpm["id"])
         for rpm_sig in rpm_sigs:
@@ -66,7 +66,7 @@ async def atomic_sign_unsigned_builds(build: Build):
             tag_if_not_tagged(build_history, build_task["nvr"], tags.compose())
 
             build_rpms = koji_session.listBuildRPMs(build_task["build_id"])
-            sign_build_rpms(build_rpms)
+            await sign_build_rpms(build_rpms)
 
         build.signed = True
         await build.save()
@@ -93,7 +93,7 @@ async def atomic_sign_unsigned_builds(build: Build):
                 if len(koji_builds) > 0:
                     tag_if_not_tagged([], koji_builds[len(koji_builds)-1]["nvr"], tags.modular_updates_candidate())
 
-            sign_build_rpms(build_rpms)
+            await sign_build_rpms(build_rpms)
 
         build.signed = True
         await build.save()
