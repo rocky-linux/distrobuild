@@ -86,15 +86,16 @@ async def atomic_sign_unsigned_builds(build: Build):
                 build_history = koji_session.queryHistory(build=build_rpms[0]["build_id"])
                 tag_if_not_tagged(build_history, rpm["nvr"], tags.compose())
 
-            package_modules = await PackageModule.filter(module_parent_package_id=build.package.id).prefetch_related(
-                "package").all()
-            for package_module in package_modules:
-                koji_package = koji_session.getPackage(package_module.package.name)
-                koji_builds = koji_session.listBuilds(koji_package["id"])
-                if len(koji_builds) > 0:
-                    tag_if_not_tagged([], koji_builds[len(koji_builds) - 1]["nvr"], tags.modular_updates_candidate())
+                package_modules = await PackageModule.filter(module_parent_package_id=build.package.id).prefetch_related(
+                    "package").all()
+                for package_module in package_modules:
+                    koji_package = koji_session.getPackage(package_module.package.name)
+                    koji_builds = koji_session.listBuilds(koji_package["id"])
+                    for koji_build in koji_builds:
+                        if koji_build["source"] == mbs_build["scmurl"]:
+                            tag_if_not_tagged([], koji_build["nvr"], tags.modular_updates_candidate())
 
-            await sign_build_rpms(build_rpms)
+                await sign_build_rpms(build_rpms)
 
         build.signed = True
         await build.save()
