@@ -75,6 +75,7 @@ export const Packages = () => {
     excludeModularCandidatesFilter,
     setExcludeModularCandidatesFilter,
   ] = React.useState(true);
+  const [excludePOMFilter, setExcludePOMFilter] = React.useState(true);
   const [noBuildsOnlyFilter, setNoBuildsOnlyFilter] = React.useState(false);
   const [withBuildsOnlyFilter, setWithBuildsOnlyFilter] = React.useState(false);
   const [noImportsOnlyFilter, setNoImportsOnlyFilter] = React.useState(false);
@@ -103,6 +104,7 @@ export const Packages = () => {
             with_builds_only: withBuildsOnlyFilter,
             no_imports_only: noImportsOnlyFilter,
             with_imports_only: withImportsOnlyFilter,
+            exclude_part_of_modules: excludePOMFilter,
           },
         })
       );
@@ -121,6 +123,7 @@ export const Packages = () => {
     modulesOnlyFilter,
     nonModulesOnlyFilter,
     excludeModularCandidatesFilter,
+    excludePOMFilter,
     noBuildsOnlyFilter,
     withBuildsOnlyFilter,
     noImportsOnlyFilter,
@@ -189,6 +192,10 @@ export const Packages = () => {
 
   const toggleExcludeModularesCandidates = () => {
     setExcludeModularCandidatesFilter(!excludeModularCandidatesFilter);
+  };
+
+  const toggleExcludePOMFilter = () => {
+    setExcludePOMFilter(!excludePOMFilter);
   };
 
   const toggleNoBuildsOnly = () => {
@@ -402,6 +409,13 @@ export const Packages = () => {
                       id="exclude_modular_candidates"
                       labelText="Exclude MC"
                       checked={excludeModularCandidatesFilter}
+                    />
+                  </TableToolbarAction>
+                  <TableToolbarAction onClick={toggleExcludePOMFilter}>
+                    <Checkbox
+                      id="exclude_pom"
+                      labelText="Exclude POM"
+                      checked={excludePOMFilter}
                     />
                   </TableToolbarAction>
                 </TableToolbarMenu>
