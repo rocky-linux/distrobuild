@@ -48,8 +48,8 @@ async def sign_build_rpms(build_rpms):
 
 def tag_if_not_tagged(build_history, nvr, tag):
     if "tag_listing" in build_history:
-        for tag in build_history["tag_listing"]:
-            if tag["tag.name"] == tag:
+        for t in build_history["tag_listing"]:
+            if t["tag.name"] == tag:
                 return
 
     koji_session.tagBuild(tag, nvr)
