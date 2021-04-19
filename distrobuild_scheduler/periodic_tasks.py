@@ -145,12 +145,12 @@ async def check_build_status():
     while True:
         logger.debug("[*] Running periodic task: check_build_status")
 
-        try:
-            builds = await Build.filter(status=BuildStatus.BUILDING).all()
-            for build in builds:
+        builds = await Build.filter(status=BuildStatus.BUILDING).all()
+        for build in builds:
+            try:
                 await atomic_check_build_status(build)
-        except Exception as e:
-            logger.error(f"check_build_status: {e}")
+            except Exception as e:
+                logger.error(f"check_build_status: {e}")
 
         # run every 5 minutes
         await asyncio.sleep(60 * 5)
@@ -161,13 +161,13 @@ async def sign_unsigned_builds():
         while True:
             logger.debug("[*] Running periodic task: sign_unsigned_builds")
 
-            try:
-                builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).prefetch_related(
-                    "package").all()
-                for build in builds:
+            builds = await Build.filter(signed=False, status=BuildStatus.SUCCEEDED).prefetch_related(
+                "package").all()
+            for build in builds:
+                try:
                     await atomic_sign_unsigned_builds(build)
-            except Exception as e:
-                logger.error(f"sign_unsigned_builds: {e}")
+                except Exception as e:
+                    logger.error(f"sign_unsigned_builds: {e}")
 
             # run every 5 minutes
             await asyncio.sleep(60 * 5)
