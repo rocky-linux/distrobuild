@@ -71,7 +71,7 @@ async def atomic_sign_unsigned_builds(build: Build):
         build.signed = True
         await build.save()
     elif build.mbs_id:
-        mbs_build = mbs_client.get_build(build.mbs_id)
+        mbs_build = await mbs_client.get_build(build.mbs_id)
         rpms = mbs_build["tasks"]["rpms"]
         for rpm_name in rpms.keys():
             if rpm_name == "module-build-macros":
