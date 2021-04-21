@@ -26,7 +26,7 @@ import koji
 from tortoise.transactions import atomic
 
 from distrobuild.common import tags
-from distrobuild.models import Build, BuildStatus, Package, PackageModule
+from distrobuild.models import Build, BuildStatus, Package, PackageModule, Repo
 from distrobuild.session import koji_session, mbs_client
 from distrobuild.settings import settings
 
@@ -90,6 +90,8 @@ async def atomic_sign_unsigned_builds(build: Build):
                     module_parent_package_id=build.package.id).prefetch_related(
                     "package").all()
                 for package_module in package_modules:
+                    if package_module.package.repo != Repo.MODULAR_CANDIDATE:
+                        continue
                     koji_package = koji_session.getPackage(package_module.package.name)
                     koji_builds = koji_session.listBuilds(koji_package["id"])
                     for koji_build in koji_builds:
