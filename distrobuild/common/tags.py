@@ -25,6 +25,10 @@ def base() -> str:
     return f"dist-{settings.tag_prefix}{settings.version}"
 
 
+def extras() -> str:
+    return f"{base()}-extras"
+
+
 def compose() -> str:
     return f"{base()}-compose"
 

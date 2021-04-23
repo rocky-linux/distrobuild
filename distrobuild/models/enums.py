@@ -29,6 +29,7 @@ class Repo(str, Enum):
     MODULAR_CANDIDATE = "MODULAR_CANDIDATE"
     ORIGINAL = "ORIGINAL"
     INFRA = "INFRA"
+    EXTRAS = "EXTRAS"
 
 
 class BuildStatus(str, Enum):

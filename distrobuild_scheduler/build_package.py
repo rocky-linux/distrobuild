@@ -25,7 +25,7 @@ from tortoise.transactions import atomic
 
 from distrobuild.common import tags
 from distrobuild.mbs import MBSConflictException
-from distrobuild.models import Build, BuildStatus, Package
+from distrobuild.models import Build, BuildStatus, Package, Repo
 from distrobuild.session import koji_session, mbs_client
 from distrobuild.settings import settings
 from distrobuild_scheduler import logger
@@ -44,7 +44,11 @@ async def do(package: Package, build: Build, token: Optional[str]):
             build.status = BuildStatus.BUILDING
             await build.save()
         else:
-            target = tags.base() if not build.force_tag else build.force_tag
+            default_target = tags.base()
+            if package.repo == Repo.EXTRAS:
+                default_target = tags.extras()
+
+            target = default_target if not build.force_tag else build.force_tag
 
             host = f"git+https://{settings.gitlab_host}{settings.repo_prefix}"
             source = f"{host}/rpms/{gitlabify(package.name)}.git?#{build.import_commit.commit}"
