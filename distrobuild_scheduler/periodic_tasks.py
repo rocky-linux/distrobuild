@@ -80,8 +80,9 @@ async def atomic_sign_unsigned_builds(build: Build):
             if rpm["state"] != 1:
                 continue
 
-            build_rpms = koji_session.listBuildRPMs(rpm["nvr"])
+            koji_session.packageListAdd(tags.compose(), rpm_name, "distrobuild")
 
+            build_rpms = koji_session.listBuildRPMs(rpm["nvr"])
             if len(build_rpms) > 0:
                 build_history = koji_session.queryHistory(build=build_rpms[0]["build_id"])
                 tag_if_not_tagged(build_history, rpm["nvr"], tags.compose())
