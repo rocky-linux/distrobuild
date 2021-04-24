@@ -93,6 +93,7 @@ async def process_module_dump(responsible_username: str) -> None:
 
                 await m_package.save()
 
-                existing_pm_count = await PackageModule.filter(package_id=m_package.id).count()
+                existing_pm_count = await PackageModule.filter(package_id=m_package.id,
+                                                               module_parent_package_id=existing_package.id).count()
                 if existing_pm_count == 0:
                     await PackageModule.create(package_id=m_package.id, module_parent_package_id=existing_package.id)
