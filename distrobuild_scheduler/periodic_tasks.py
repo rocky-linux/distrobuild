@@ -92,6 +92,7 @@ async def atomic_sign_unsigned_builds(build: Build):
 
                     if package_module.package.repo != Repo.MODULAR_CANDIDATE:
                         continue
+                    koji_session.packageListAdd(tags.module_compose(), package_module.package.name, "distrobuild")
                     koji_package = koji_session.getPackage(package_module.package.name)
                     koji_builds = koji_session.listBuilds(koji_package["id"])
                     for koji_build in koji_builds:
