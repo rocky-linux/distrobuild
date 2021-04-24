@@ -98,6 +98,7 @@ async def atomic_sign_unsigned_builds(build: Build):
                     for koji_build in koji_builds:
                         if koji_build["source"] == mbs_build["scmurl"]:
                             tag_if_not_tagged([], koji_build["nvr"], tags.module_compose())
+                            break
 
                 await sign_build_rpms(build_rpms)
 
