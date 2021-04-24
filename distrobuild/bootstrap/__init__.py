@@ -79,7 +79,7 @@ async def process_module_dump(responsible_username: str) -> None:
             if len(module_package.strip()) == 0:
                 continue
             m_package_name = module_package.strip()
-            m_packages = await Package.filter(name=m_package_name).all()
+            m_packages = await Package.filter(name=m_package_name, is_module=False).all()
 
             for m_package in m_packages:
                 if m_package and m_package.repo != Repo.MODULAR_CANDIDATE:
