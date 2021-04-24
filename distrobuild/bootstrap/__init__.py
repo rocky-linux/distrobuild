@@ -79,16 +79,20 @@ async def process_module_dump(responsible_username: str) -> None:
             if len(module_package.strip()) == 0:
                 continue
             m_package_name = module_package.strip()
-            m_package = await Package.filter(name=m_package_name, repo__not=Repo.MODULAR_CANDIDATE).get_or_none()
+            m_packages = await Package.filter(name=m_package_name).all()
 
-            if m_package and m_package.repo != Repo.MODULAR_CANDIDATE:
-                m_package.part_of_module = True
+            for m_package in m_packages:
+                if m_package and m_package.repo != Repo.MODULAR_CANDIDATE:
+                    m_package.part_of_module = True
 
-            # Either this is safe to skip, or it will cause build failure later
-            # This is not a bug though as all package records should be up to
-            # date before bootstrapping the module list
-            if not m_package:
-                continue
+                # Either this is safe to skip, or it will cause build failure later
+                # This is not a bug though as all package records should be up to
+                # date before bootstrapping the module list
+                if not m_package:
+                    continue
 
-            await m_package.save()
-            await PackageModule.create(package_id=m_package.id, module_parent_package_id=existing_package.id)
+                await m_package.save()
+
+                existing_pm_count = await PackageModule.filter(package_id=m_package.id).count()
+                if existing_pm_count == 0:
+                    await PackageModule.create(package_id=m_package.id, module_parent_package_id=existing_package.id)
