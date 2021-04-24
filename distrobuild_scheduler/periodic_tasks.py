@@ -90,6 +90,10 @@ async def atomic_sign_unsigned_builds(build: Build):
                     module_parent_package_id=build.package.id).prefetch_related(
                     "package").all()
                 for package_module in package_modules:
+                    package_module_package = await Package.filter(id=package_module.package.id).first()
+                    package_module_package.last_build = datetime.datetime.now()
+                    await package_module_package.save()
+
                     if package_module.package.repo != Repo.MODULAR_CANDIDATE:
                         continue
                     koji_package = koji_session.getPackage(package_module.package.name)
