@@ -30,6 +30,12 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
                          single_tag: Optional[str] = None, original: bool = False) -> dict:
     upstream_prefix = f"ssh://{settings.ssh_user}@{settings.gitlab_host}:{settings.ssh_port}{settings.repo_prefix}"
 
+    prefix_no_trailing = settings.repo_prefix
+    if prefix_no_trailing.endswith("/"):
+        prefix_no_trailing = prefix_no_trailing[:-1]
+
+    upstream_prefix_https = f"{settings.gitlab_host}{prefix_no_trailing}"
+
     args = [
         "--version",
         str(settings.version),
@@ -37,6 +43,8 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
         source_rpm,
         "--upstream-prefix",
         upstream_prefix,
+        "--upstream-prefix-https",
+        upstream_prefix_https,
         "--storage-addr",
         settings.storage_addr,
         "--ssh-user",
