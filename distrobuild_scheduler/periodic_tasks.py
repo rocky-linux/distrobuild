@@ -42,6 +42,7 @@ async def sign_build_rpms(build_rpms):
                 continue
 
         nvr_arch = "%s.%s" % (build_rpm["nvr"], build_rpm["arch"])
+        logger.debug(f"[*] signing NVR {nvr_arch}")
         await sign_koji_package(nvr_arch)
         koji_session.writeSignedRPM(nvr_arch, settings.sigul_key_id)
 
