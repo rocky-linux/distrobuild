@@ -153,4 +153,7 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_bui
                 await BatchBuildPackage.create(build_id=build.id, batch_build_id=batch_build_id)
             await build_package_task(package.id, build.id, token)
 
+            if only_branch:
+                break
+
     return {}
