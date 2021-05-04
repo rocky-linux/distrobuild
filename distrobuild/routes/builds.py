@@ -118,7 +118,13 @@ async def queue_build(request: Request, body: Dict[str, BuildRequest], batch_bui
             return {}
         import_commits = [latest_build.import_commit]
     else:
-        latest_import = await Import.filter(package_id=package.id).order_by("-created_at").first()
+        filters = {
+            "package_id": package.id
+        }
+        if body.get("ignore_modules"):
+            filters["module"] = False
+
+        latest_import = await Import.filter(**filters).order_by("-created_at").first()
         import_commits = await ImportCommit.filter(import__id=latest_import.id).all()
 
     if body.get("arch_override"):
