@@ -36,7 +36,7 @@
     "compression-webpack-plugin": "^7.1.2",
     "css-loader": "^5.0.1",
     "html-webpack-plugin": "^4.5.1",
-    "postcss": "^8.2.9",
+    "postcss": "^8.2.10",
     "postcss-loader": "^5.2.0",
     "prettier": "^2.2.1",
     "react": "^17.0.1",
