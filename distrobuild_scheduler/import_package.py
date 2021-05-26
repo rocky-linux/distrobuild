@@ -35,12 +35,12 @@ from distrobuild_scheduler.utils import gitlabify
 
 
 @atomic()
-async def do(package: Package, package_import: Import):
+async def do(package: Package, package_import: Import, allow_stream_branches: bool):
     koji_session.packageListAdd(tags.base(), package.name, "distrobuild")
 
     original = package.repo == Repo.ORIGINAL
     branch_commits = await srpmproc.import_project(package_import.id, package.name, package_import.module,
-                                                   original=original)
+                                                   original=original, allow_stream_branches=allow_stream_branches)
     for branch in branch_commits.keys():
         commit = branch_commits[branch]
         await ImportCommit.create(branch=branch, commit=commit, import__id=package_import.id)
@@ -54,7 +54,7 @@ async def do(package: Package, package_import: Import):
 
 
 # noinspection DuplicatedCode
-async def task(package_id: int, import_id: int, dependents: List[Tuple[int, int]]):
+async def task(package_id: int, import_id: int, dependents: List[Tuple[int, int]], allow_stream_branches: bool = False):
     package = await Package.filter(id=package_id).get()
     package_import = await Import.filter(id=import_id).get()
 
@@ -63,7 +63,7 @@ async def task(package_id: int, import_id: int, dependents: List[Tuple[int, int]
             package_import.status = ImportStatus.IN_PROGRESS
             await package_import.save()
 
-            await do(package, package_import)
+            await do(package, package_import, allow_stream_branches)
         except Exception as e:
             logger.error(e)
             package_import.status = ImportStatus.FAILED

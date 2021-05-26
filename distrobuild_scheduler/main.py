@@ -47,7 +47,8 @@ async def consume_messages(i: int):
                 msg = body.get("message")
 
                 if msg == "import_package":
-                    await import_package.task(body["package_id"], body["import_id"], body["dependents"])
+                    await import_package.task(body["package_id"], body["import_id"], body["dependents"],
+                                              body["allow_stream_branches"])
                 elif msg == "build_package":
                     token = body.get("token")
                     if token:

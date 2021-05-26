@@ -53,10 +53,10 @@ export interface BatchListProps {
 export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [packageList, setPackageList] = React.useState('');
-  const [ignoreModules, setIgnoreModules] = React.useState<boolean | null>(
-    null
-  );
-  const [scratch, setScratch] = React.useState<boolean | null>(null);
+  const [ignoreModules, setIgnoreModules] = React.useState<boolean>(false);
+  const [allowStreamBranches, setAllowStreamBranches] =
+    React.useState<boolean>(false);
+  const [scratch, setScratch] = React.useState<boolean>(false);
   const [archOverride, setArchOverride] = React.useState<string | null>(null);
   const [forceTag, setForceTag] = React.useState<string | null>(null);
   const [disable, setDisable] = React.useState(false);
@@ -105,6 +105,7 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
           packages,
           scratch,
           ignore_modules: ignoreModules,
+          allow_stream_branches: allowStreamBranches,
           arch_override: archOverride,
           force_tag: forceTag,
         })
@@ -159,6 +160,15 @@ export const BatchList = <T extends DataTableRow>(props: BatchListProps) => {
             onChange={packageListChange}
             labelText="Package list"
           />
+          {props.name === 'imports' && (
+            <div className="mt-4">
+              <Checkbox
+                id="allow_stream_branches"
+                labelText="Allow stream branches"
+                onChange={(checked) => setAllowStreamBranches(checked)}
+              />
+            </div>
+          )}
           {props.name === 'builds' && (
             <div className="mt-4">
               <Checkbox

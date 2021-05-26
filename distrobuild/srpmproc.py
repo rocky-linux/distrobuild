@@ -27,7 +27,8 @@ from distrobuild.settings import settings
 
 
 async def import_project(import_id: int, source_rpm: str, module_mode: bool = False,
-                         single_tag: Optional[str] = None, original: bool = False) -> dict:
+                         single_tag: Optional[str] = None, original: bool = False,
+                         allow_stream_branches: bool = False) -> dict:
     upstream_prefix = f"ssh://{settings.ssh_user}@{settings.gitlab_host}:{settings.ssh_port}{settings.repo_prefix}"
 
     prefix_no_trailing = settings.repo_prefix
@@ -75,6 +76,9 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
         args.append(settings.original_rpm_prefix)
         args.append("--module-prefix")
         args.append(settings.original_module_prefix)
+
+    if allow_stream_branches:
+        args.append("--allow-stream-branches")
 
     f = open(f"{settings.import_logs_dir}/import-{import_id}.log", "w")
 

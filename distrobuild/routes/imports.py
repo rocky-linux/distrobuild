@@ -37,6 +37,7 @@ router = APIRouter(prefix="/imports")
 
 class ImportRequest(BaseModel):
     full_history: bool = False
+    allow_stream_branches: bool = False
     single_tag: Optional[str]
     package_id: Optional[int]
     package_name: Optional[str]
@@ -97,6 +98,7 @@ async def import_package_route(request: Request, body: Dict[str, ImportRequest],
         raise HTTPException(401, detail="modular subpackages cannot be imported")
 
     build_order = await create_import_order(package, user["preferred_username"], batch_import_id)
-    await import_package_task(build_order[0][0], build_order[0][1], build_order[1:])
+    await import_package_task(build_order[0][0], build_order[0][1], build_order[1:],
+                              body.get("allow_stream_branches") or False)
 
     return {}

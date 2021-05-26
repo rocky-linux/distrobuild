@@ -37,6 +37,7 @@ router = APIRouter(prefix="/batches")
 
 class BatchImportRequest(BaseModel):
     should_precheck: bool = True
+    allow_stream_branches: bool = False
     packages: List[ImportRequest]
 
 
@@ -70,7 +71,9 @@ async def batch_import_package(request: Request, body: BatchImportRequest):
     batch = await BatchImport.create()
 
     for build_request in body.packages:
-        await import_package_route(request, dict(build_request), batch.id)
+        await import_package_route(request,
+                                   dict(**dict(build_request), allow_stream_branches=body.allow_stream_branches),
+                                   batch.id)
 
     return NewBatchResponse(id=batch.id)
 

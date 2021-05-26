@@ -47,11 +47,13 @@ async def init_channel(loop) -> None:
     channel = await connection.channel()
 
 
-async def import_package_task(package_id: int, import_id: int, dependents: List[Tuple[int, int]]):
+async def import_package_task(package_id: int, import_id: int, dependents: List[Tuple[int, int]],
+                              allow_stream_branches: bool = False):
     msg_body = {
         "message": "import_package",
         "package_id": package_id,
         "import_id": import_id,
+        "allow_stream_branches": allow_stream_branches,
         "dependents": dependents,
     }
     encoded = json.dumps(msg_body).encode()
