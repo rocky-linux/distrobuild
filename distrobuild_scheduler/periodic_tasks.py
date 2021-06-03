@@ -82,15 +82,16 @@ async def sign_mbs_build(build: Build, mbs_build):
         package_module_package.last_build = datetime.datetime.now()
         await package_module_package.save()
 
-        if package_module.package.repo != Repo.MODULAR_CANDIDATE:
-            continue
-
-        koji_session.packageListAdd(tags.module_compose(), package_module.package.name, "distrobuild")
-        koji_tag = mbs_build["koji_tag"]
-        context = mbs_build["context"]
-        name = mbs_build["name"]
-        nvr = koji_tag.replace("module-", "").replace(f"-{context}", f".{context}").replace(f"{name}", f"{package_module.package.name}")
-        tag_if_not_tagged([], nvr, tags.module_compose())
+    name = mbs_build["name"]
+    name_devel = f"{name}-devel"
+    koji_session.packageListAdd(tags.module_compose(), name, "distrobuild")
+    koji_session.packageListAdd(tags.module_compose(), name_devel, "distrobuild")
+    koji_tag = mbs_build["koji_tag"]
+    context = mbs_build["context"]
+    nvr = koji_tag.replace("module-", "").replace(f"-{context}", f".{context}")
+    nvr_devel = nvr.replace(name, name_devel)
+    koji_session.tagBuild(tags.module_compose(), nvr)
+    koji_session.tagBuild(tags.module_compose(), nvr_devel)
 
     build.signed = True
     await build.save()
