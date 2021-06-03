@@ -56,6 +56,46 @@ def tag_if_not_tagged(build_history, nvr, tag):
     koji_session.tagBuild(tag, nvr)
 
 
+async def sign_mbs_build(build: Build, mbs_build):
+    tasks = mbs_build.get("tasks")
+    if not tasks:
+        return
+    rpms = tasks.get("rpms")
+    if not rpms:
+        return
+    for rpm_name in rpms.keys():
+        if rpm_name == "module-build-macros":
+            continue
+        rpm = rpms[rpm_name]
+        if rpm["state"] != 1:
+            continue
+
+        build_rpms = koji_session.listBuildRPMs(rpm["nvr"])
+        if len(build_rpms) > 0:
+            await sign_build_rpms(build_rpms)
+
+    package_modules = await PackageModule.filter(
+        module_parent_package_id=build.package.id).prefetch_related(
+        "package").all()
+    for package_module in package_modules:
+        package_module_package = await Package.filter(id=package_module.package.id).first()
+        package_module_package.last_build = datetime.datetime.now()
+        await package_module_package.save()
+
+        if package_module.package.repo != Repo.MODULAR_CANDIDATE:
+            continue
+        koji_session.packageListAdd(tags.module_compose(), package_module.package.name, "distrobuild")
+        koji_package = koji_session.getPackage(package_module.package.name)
+        koji_builds = koji_session.listBuilds(koji_package["id"])
+        for koji_build in koji_builds:
+            if koji_build["source"] == mbs_build["scmurl"]:
+                tag_if_not_tagged([], koji_build["nvr"], tags.module_compose())
+                break
+
+    build.signed = True
+    await build.save()
+
+
 @atomic()
 async def atomic_sign_unsigned_builds(build: Build):
     if build.koji_id:
@@ -73,38 +113,13 @@ async def atomic_sign_unsigned_builds(build: Build):
         await build.save()
     elif build.mbs_id:
         mbs_build = await mbs_client.get_build(build.mbs_id)
-        rpms = mbs_build["tasks"]["rpms"]
-        for rpm_name in rpms.keys():
-            if rpm_name == "module-build-macros":
-                continue
-            rpm = rpms[rpm_name]
-            if rpm["state"] != 1:
-                continue
+        await sign_mbs_build(build, mbs_build)
 
-            build_rpms = koji_session.listBuildRPMs(rpm["nvr"])
-            if len(build_rpms) > 0:
-                await sign_build_rpms(build_rpms)
-
-        package_modules = await PackageModule.filter(
-            module_parent_package_id=build.package.id).prefetch_related(
-            "package").all()
-        for package_module in package_modules:
-            package_module_package = await Package.filter(id=package_module.package.id).first()
-            package_module_package.last_build = datetime.datetime.now()
-            await package_module_package.save()
-
-            if package_module.package.repo != Repo.MODULAR_CANDIDATE:
-                continue
-            koji_session.packageListAdd(tags.module_compose(), package_module.package.name, "distrobuild")
-            koji_package = koji_session.getPackage(package_module.package.name)
-            koji_builds = koji_session.listBuilds(koji_package["id"])
-            for koji_build in koji_builds:
-                if koji_build["source"] == mbs_build["scmurl"]:
-                    tag_if_not_tagged([], koji_build["nvr"], tags.module_compose())
-                    break
-
-        build.signed = True
-        await build.save()
+        siblings = mbs_build.get("siblings")
+        if siblings:
+            for sibling in siblings:
+                n_mbs_build = await mbs_client.get_build(sibling)
+                await sign_mbs_build(build, n_mbs_build)
 
 
 @atomic()
