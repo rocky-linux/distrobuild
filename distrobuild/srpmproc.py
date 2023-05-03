@@ -38,16 +38,14 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
     upstream_prefix_https = f"{settings.gitlab_host}{prefix_no_trailing}"
 
     args = [
-        "--version",
-        str(settings.version),
         "--source-rpm",
         source_rpm,
-        "--upstream-prefix",
-        upstream_prefix,
-        "--upstream-prefix-https",
-        upstream_prefix_https,
         "--storage-addr",
         settings.storage_addr,
+        "--version",
+        str(settings.version),
+        "--upstream-prefix",
+        upstream_prefix,
         "--ssh-user",
         settings.ssh_user,
     ]
@@ -78,7 +76,9 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
         args.append(settings.original_module_prefix)
 
     if allow_stream_branches:
-        args.append("--allow-stream-branches")
+        args.append("--branch-suffix s")
+    else:
+        args.append("--strict-branch-mode")
 
     f = open(f"{settings.import_logs_dir}/import-{import_id}.log", "w")
 
