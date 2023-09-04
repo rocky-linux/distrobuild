@@ -39,7 +39,7 @@ export interface BuildsTableProps {
   builds: IPaginated<IBuild>;
 }
 
-export const buildHeaders = ['ID', 'Initiated', 'Package', 'Status', ''];
+export const buildHeaders = ['ID', 'Initiated', 'Package', 'Status', 'Executor', ''];
 
 export const BuildsTable = (props: BuildsTableProps) => {
   const { builds } = props;
@@ -77,6 +77,16 @@ export const BuildsTable = (props: BuildsTableProps) => {
                     item.status,
                     item.scratch ? item.scratch_merged : undefined
                   )}
+                </TableCell>
+                <TableCell>
+                  <a
+                    target="_blank"
+                    href={`${window.SETTINGS.gitlabUrl}/${item.executor_username}`}
+                  >
+                    {
+                      item.executor_username
+                    }
+                  </a>
                 </TableCell>
                 <TableCell className="space-x-4">
                   {item.koji_id && (

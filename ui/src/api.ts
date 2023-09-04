@@ -52,6 +52,7 @@ export interface IPackage {
 export interface IImport {
   id: string;
   created_at: string;
+  executor_username: string;
   status: string;
   module: boolean;
   commits: Commit[];
@@ -61,6 +62,7 @@ export interface IImport {
 export interface IBuild {
   id: string;
   created_at: string;
+  executor_username: string;
   status: string;
   koji_id: string;
   mbs_id: string;

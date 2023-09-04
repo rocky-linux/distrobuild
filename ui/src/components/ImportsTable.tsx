@@ -39,7 +39,7 @@ export interface ImportsTableProps {
   imports: IPaginated<IImport>;
 }
 
-const importHeaders = ['ID', 'Initiated', 'Package', 'Status', ''];
+const importHeaders = ['ID', 'Initiated', 'Package', 'Status', 'Executor', ''];
 
 export const ImportsTable = (props: ImportsTableProps) => {
   const { imports } = props;
@@ -74,6 +74,16 @@ export const ImportsTable = (props: ImportsTableProps) => {
                   </Link>
                 </TableCell>
                 <TableCell>{statusToTag(item.status)}</TableCell>
+                <TableCell>
+                  <a
+                    target="_blank"
+                    href={`${window.SETTINGS.gitlabUrl}/${item.executor_username}`}
+                  >
+                    {
+                      item.executor_username
+                    }
+                  </a>
+                </TableCell>
                 <TableCell className="space-x-4">
                   <a href={`/api/imports/${item.id}/logs`} target="_blank">
                     Logs

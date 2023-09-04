@@ -80,6 +80,11 @@ async def import_project(import_id: int, source_rpm: str, module_mode: bool = Fa
     else:
         args.append("--strict-branch-mode")
 
+    args.append("--rpm-prefix")
+    args.append("https://git.rockylinux.org/staging/src-rhel/rpms")
+    args.append("--module-prefix")
+    args.append("https://git.rockylinux.org/staging/src-rhel/modules")
+
     f = open(f"{settings.import_logs_dir}/import-{import_id}.log", "w")
 
     proc = await asyncio.create_subprocess_exec("srpmproc", *args, stdout=asyncio.subprocess.PIPE, stderr=f)
